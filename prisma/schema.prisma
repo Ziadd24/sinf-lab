@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Species {
+  id        String   @id @default(cuid())
+  nameEn    String
+  nameAr    String
+  icon      String?
+  pets      Pet[]
+  tests     TestCatalog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Clinic {
+  id                 String    @id @default(cuid())
+  clinicName         String
+  clinicNameAr       String?
+  taxNumber          String?   @unique
+  commercialRegister String?
+  contactName        String?
+  contactNameAr      String?
+  phone              String    @unique
+  email              String?
+  address            String?
+  addressAr          String?
+  city               String?
+  cityAr             String?
+  active             Boolean   @default(true)
+  pets               Pet[]
+  invoices           Invoice[]
+  samples            LabSample[]
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Pet {
+  id         String   @id @default(cuid())
+  name       String
+  nameAr     String?
+  speciesId  String
+  species    Species  @relation(fields: [speciesId], references: [id])
+  breed      String?
+  breedAr    String?
+  birthDate  DateTime?
+  gender     String   @default("Unknown") // Male, Female, Unknown
+  chipNumber String?
+  ownerId    String?
+  ownerName  String?
+  ownerNameAr String?
+  ownerPhone String?
+  clinicId   String?
+  clinic     Clinic?  @relation(fields: [clinicId], references: [id])
+  samples    LabSample[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TestCatalog {
+  id         String    @id @default(cuid())
+  testCode   String    @unique
+  testNameEn String
+  testNameAr String
+  category   String?   // Hematology, Biochemistry, etc.
+  categoryAr String?
+  speciesId  String?
+  species    Species?  @relation(fields: [speciesId], references: [id])
+  minNormal  Float?
+  maxNormal  Float?
+  unit       String?
+  price      Float
+  turnaround String?   // e.g., "2-4 hours"
+  active     Boolean   @default(true)
+  results    SampleResult[]
+  validationRule ValidationRule?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  clinicId      String
+  clinic        Clinic    @relation(fields: [clinicId], references: [id])
+  subTotal      Float
+  vatRate       Float     @default(0.15)
+  vatAmount     Float
+  totalAmount   Float
+  paidAmount    Float     @default(0)
+  status        String    @default("Unpaid") // Paid, Partially_Paid, Unpaid
+  dueDate       DateTime?
+  notes         String?
+  zatcaQr       String?
+  samples       LabSample[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model LabSample {
+  id              String        @id @default(cuid())
+  barcode         String        @unique
+  petId           String
+  pet             Pet           @relation(fields: [petId], references: [id])
+  clinicId        String?
+  clinic          Clinic?       @relation(fields: [clinicId], references: [id])
+  invoiceId       String?
+  invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
+  referringDoctor String?
+  referringDoctorAr String?
+  testIds         String        // comma-separated test catalog IDs
+  status          String        @default("Collected") // Collected, In_Progress, Completed, Approved
+  priority        String        @default("Normal") // Normal, Urgent, STAT
+  notes           String?
+  collectedAt     DateTime      @default(now())
+  completedAt     DateTime?
+  results         SampleResult[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model SampleResult {
+  id            String      @id @default(cuid())
+  sampleId      String
+  sample        LabSample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  catalogId     String
+  catalog       TestCatalog @relation(fields: [catalogId], references: [id])
+  resultValue   String
+  isPanic       Boolean     @default(false)
+  notes         String?
+  labComments   String?     // Doctor's interpretation/comments
+  enteredAt     DateTime    @default(now())
+  enteredBy     String?
+  approvedBy    String?     // User ID of approving doctor
+  approvedAt    DateTime?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String   // Will be hashed
+  fullName      String
+  fullNameAr    String?
+  role          String   @default("TECHNICIAN") // DOCTOR, TECHNICIAN, ADMIN
+  active        Boolean  @default(true)
+  auditLogs     AuditLog[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action        String   // create, update, delete, approve
+  tableName     String   // User, LabSample, SampleResult, etc.
+  recordId      String   // ID of affected record
+  oldValue      String?  // JSON string of old values
+  newValue      String?  // JSON string of new values
+  description   String?
+  ipAddress     String?
+
+  createdAt     DateTime @default(now())
+}
+
+model ValidationRule {
+  id            String   @id @default(cuid())
+  catalogId     String   @unique
+  catalog       TestCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  minValue      Float?
+  maxValue      Float?
+  panicLowValue Float?
+  panicHighValue Float?
+  allowDuplicateWithin Int? // Hours, 0 = no duplicates
+  customRules   String?  // JSON for complex logic
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

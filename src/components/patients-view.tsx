@@ -65,7 +65,7 @@ export function PatientsView() {
       fetch('/api/pets').then(r => r.json()),
       fetch('/api/species').then(r => r.json()),
       fetch('/api/clinics').then(r => r.json()),
-    ]).then(([p, s, c]) => { setPets(p); setSpecies(s); setClinics(c); setLoading(false) })
+    ]).then(([p, s, c]) => { setPets(p.data || p); setSpecies(s.data || s); setClinics(c.data || c); setLoading(false) })
   }
   useEffect(() => { fetchData() }, [])
 

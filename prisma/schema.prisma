@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Species {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   nameEn    String
   nameAr    String
   icon      String?
@@ -20,7 +20,7 @@ model Species {
 }
 
 model Clinic {
-  id                 String    @id @default(cuid())
+  id                 String    @id @default(cuid()) @map("_id")
   clinicName         String
   clinicNameAr       String?
   taxNumber          String?   @unique
@@ -43,7 +43,7 @@ model Clinic {
 }
 
 model Pet {
-  id         String   @id @default(cuid())
+  id         String   @id @default(cuid()) @map("_id")
   name       String
   nameAr     String?
   speciesId  String
@@ -66,7 +66,7 @@ model Pet {
 }
 
 model TestCatalog {
-  id         String    @id @default(cuid())
+  id         String    @id @default(cuid()) @map("_id")
   testCode   String    @unique
   testNameEn String
   testNameAr String
@@ -88,7 +88,7 @@ model TestCatalog {
 }
 
 model Invoice {
-  id            String    @id @default(cuid())
+  id            String    @id @default(cuid()) @map("_id")
   invoiceNumber String    @unique
   clinicId      String
   clinic        Clinic    @relation(fields: [clinicId], references: [id])
@@ -108,7 +108,7 @@ model Invoice {
 }
 
 model LabSample {
-  id              String        @id @default(cuid())
+  id              String        @id @default(cuid()) @map("_id")
   barcode         String        @unique
   petId           String
   pet             Pet           @relation(fields: [petId], references: [id])
@@ -118,7 +118,7 @@ model LabSample {
   invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
   referringDoctor String?
   referringDoctorAr String?
-  testIds         String        // comma-separated test catalog IDs
+  testIds         String[]      // array of test catalog IDs
   status          String        @default("Collected") // Collected, In_Progress, Completed, Approved
   priority        String        @default("Normal") // Normal, Urgent, STAT
   notes           String?
@@ -131,7 +131,7 @@ model LabSample {
 }
 
 model SampleResult {
-  id            String      @id @default(cuid())
+  id            String      @id @default(cuid()) @map("_id")
   sampleId      String
   sample        LabSample   @relation(fields: [sampleId], references: [id], onDelete: Cascade)
   catalogId     String
@@ -150,7 +150,7 @@ model SampleResult {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   email         String   @unique
   password      String   // Will be hashed
   fullName      String
@@ -164,7 +164,7 @@ model User {
 }
 
 model AuditLog {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   action        String   // create, update, delete, approve
@@ -179,7 +179,7 @@ model AuditLog {
 }
 
 model ValidationRule {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   catalogId     String   @unique
   catalog       TestCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
   minValue      Float?

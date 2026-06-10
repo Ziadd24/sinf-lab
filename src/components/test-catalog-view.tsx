@@ -62,7 +62,7 @@ export function TestCatalogView() {
     Promise.all([
       fetch('/api/tests').then(r => r.json()),
       fetch('/api/species').then(r => r.json()),
-    ]).then(([te, s]) => { setTests(te); setSpecies(s); setLoading(false) })
+    ]).then(([te, s]) => { setTests(te.data || te); setSpecies(s.data || s); setLoading(false) })
   }
   useEffect(() => { fetchData() }, [])
 

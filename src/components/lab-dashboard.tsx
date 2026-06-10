@@ -44,7 +44,8 @@ export function LabDashboard() {
   const fetchDashboardData = async () => {
     try {
       const response = await fetch('/api/samples')
-      const data = await response.json()
+      const result = await response.json()
+      const data = result.data || result
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)

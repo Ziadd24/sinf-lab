@@ -62,7 +62,9 @@ export function InvoicesView() {
     Promise.all([
       fetch('/api/invoices').then(r => r.json()),
       fetch('/api/clinics').then(r => r.json()),
-    ]).then(([i, c]) => { setInvoices(i); setClinics(c); setLoading(false) })
+    ]).then(([i, c]) => {
+      setInvoices(i.data || i); setClinics(c.data || c); setLoading(false)
+    })
   }
   useEffect(() => { fetchData() }, [])
 
@@ -86,11 +88,9 @@ export function InvoicesView() {
     const vat = parseFloat(form.vatRate) || 0.15
     const vatAmount = sub * vat
     const total = sub + vatAmount
-    const count = invoices.length + 1
     await fetch('/api/invoices', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        invoiceNumber: `INV-${new Date().getFullYear()}-${String(count).padStart(3, '0')}`,
         clinicId: form.clinicId,
         subTotal: sub,
         vatRate: vat,
@@ -98,8 +98,8 @@ export function InvoicesView() {
         totalAmount: total,
         paidAmount: 0,
         status: 'Unpaid',
-        notes: form.notes,
-        dueDate: form.dueDate || null,
+        notes: form.notes || undefined,
+        dueDate: form.dueDate || undefined,
       }),
     })
     setShowCreateDialog(false)

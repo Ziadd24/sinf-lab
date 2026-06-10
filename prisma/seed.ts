@@ -245,7 +245,7 @@ async function main() {
         invoiceId: invoice1.id,
         referringDoctor: 'Dr. Ahmed Al-Farsi',
         referringDoctorAr: 'د. أحمد الفارسي',
-        testIds: [tests[0].id, tests[1].id, tests[13].id].join(','),
+        testIds: [tests[0].id, tests[1].id, tests[13].id],
         status: 'Completed',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 5 * 86400000),
@@ -260,7 +260,7 @@ async function main() {
         invoiceId: invoice2.id,
         referringDoctor: 'Dr. Khalid Al-Salem',
         referringDoctorAr: 'د. خالد السالم',
-        testIds: [tests[14].id, tests[15].id].join(','),
+        testIds: [tests[14].id, tests[15].id],
         status: 'In_Progress',
         priority: 'Urgent',
         collectedAt: new Date(now.getTime() - 2 * 86400000),
@@ -274,7 +274,7 @@ async function main() {
         invoiceId: invoice3.id,
         referringDoctor: 'Dr. Mohammed Al-Dosari',
         referringDoctorAr: 'د. محمد الدوسري',
-        testIds: [tests[5].id, tests[6].id, tests[12].id].join(','),
+        testIds: [tests[5].id, tests[6].id, tests[12].id],
         status: 'In_Progress',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 1 * 86400000),
@@ -288,7 +288,7 @@ async function main() {
         invoiceId: invoice5.id,
         referringDoctor: 'Dr. Sara Al-Mohammadi',
         referringDoctorAr: 'د. سارة المحمدي',
-        testIds: [tests[0].id, tests[7].id, tests[8].id].join(','),
+        testIds: [tests[0].id, tests[7].id, tests[8].id],
         status: 'Collected',
         priority: 'Normal',
         collectedAt: new Date(),
@@ -302,7 +302,7 @@ async function main() {
         invoiceId: invoice6.id,
         referringDoctor: 'Dr. Ahmed Al-Farsi',
         referringDoctorAr: 'د. أحمد الفارسي',
-        testIds: [tests[2].id, tests[4].id, tests[10].id].join(','),
+        testIds: [tests[2].id, tests[4].id, tests[10].id],
         status: 'Approved',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 7 * 86400000),
@@ -317,7 +317,7 @@ async function main() {
         invoiceId: invoice4.id,
         referringDoctor: 'Dr. Fatima Al-Harbi',
         referringDoctorAr: 'د. فاطمة الحربي',
-        testIds: [tests[16].id].join(','),
+        testIds: [tests[16].id],
         status: 'Collected',
         priority: 'STAT',
         collectedAt: new Date(),
@@ -332,7 +332,7 @@ async function main() {
         invoiceId: invoice3.id,
         referringDoctor: 'Dr. Mohammed Al-Dosari',
         referringDoctorAr: 'د. محمد الدوسري',
-        testIds: [tests[5].id, tests[19].id].join(','),
+        testIds: [tests[5].id, tests[19].id],
         status: 'In_Progress',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 1 * 86400000),
@@ -346,7 +346,7 @@ async function main() {
         invoiceId: invoice5.id,
         referringDoctor: 'Dr. Sara Al-Mohammadi',
         referringDoctorAr: 'د. سارة المحمدي',
-        testIds: [tests[0].id, tests[9].id, tests[20].id].join(','),
+        testIds: [tests[0].id, tests[9].id, tests[20].id],
         status: 'Completed',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 3 * 86400000),
@@ -361,7 +361,7 @@ async function main() {
         invoiceId: invoice2.id,
         referringDoctor: 'Dr. Khalid Al-Salem',
         referringDoctorAr: 'د. خالد السالم',
-        testIds: [tests[14].id].join(','),
+        testIds: [tests[14].id],
         status: 'Collected',
         priority: 'Urgent',
         collectedAt: new Date(),
@@ -375,7 +375,7 @@ async function main() {
         invoiceId: invoice6.id,
         referringDoctor: 'Dr. Ahmed Al-Farsi',
         referringDoctorAr: 'د. أحمد الفارسي',
-        testIds: [tests[2].id, tests[4].id].join(','),
+        testIds: [tests[2].id, tests[4].id],
         status: 'Completed',
         priority: 'Normal',
         collectedAt: new Date(now.getTime() - 4 * 86400000),
@@ -409,35 +409,40 @@ async function main() {
   // Seed Users
   const hashedPassword = await bcryptjs.hash('admin123', 10)
   
-  await prisma.user.createMany({
-    data: [
-      {
-        email: 'admin@lab.sa',
-        password: hashedPassword,
-        fullName: 'Admin User',
-        fullNameAr: 'مسؤول النظام',
-        role: 'ADMIN',
-        active: true,
-      },
-      {
-        email: 'doctor1@lab.sa',
-        password: hashedPassword,
-        fullName: 'Dr. Fatima Al-Shammari',
-        fullNameAr: 'د. فاطمة الشمري',
-        role: 'DOCTOR',
-        active: true,
-      },
-      {
-        email: 'tech1@lab.sa',
-        password: hashedPassword,
-        fullName: 'Ahmed Technician',
-        fullNameAr: 'فني أحمد',
-        role: 'TECHNICIAN',
-        active: true,
-      },
-    ],
-    skipDuplicates: true,
-  })
+    const users = [
+    {
+      email: 'admin@lab.sa',
+      password: hashedPassword,
+      fullName: 'Admin User',
+      fullNameAr: 'مسؤول النظام',
+      role: 'ADMIN',
+      active: true,
+    },
+    {
+      email: 'doctor1@lab.sa',
+      password: hashedPassword,
+      fullName: 'Dr. Fatima Al-Shammari',
+      fullNameAr: 'د. فاطمة الشمري',
+      role: 'DOCTOR',
+      active: true,
+    },
+    {
+      email: 'tech1@lab.sa',
+      password: hashedPassword,
+      fullName: 'Ahmed Technician',
+      fullNameAr: 'فني أحمد',
+      role: 'TECHNICIAN',
+      active: true,
+    },
+  ]
+
+  for (const user of users) {
+    await prisma.user.upsert({
+      where: { email: user.email },
+      update: {},
+      create: user,
+    })
+  }
 
   console.log('✅ Seed data inserted successfully!')
   console.log(`  Species: 5`)

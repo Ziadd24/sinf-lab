@@ -32,12 +32,20 @@ export default function LoginPage() {
           description: 'بريد إلكتروني أو كلمة مرور غير صحيحة',
           variant: 'destructive',
         });
+        setIsLoading(false);
       } else if (result?.ok) {
         toast({
           title: 'تم تسجيل الدخول بنجاح',
           description: 'جاري التوجيه...',
         });
-        router.push('/dashboard');
+
+        // Force Next.js client router to clear its cache and fetch active login session data
+        router.refresh();
+
+        // Small 400ms delay to give your machine time to update authentication cookie state
+        setTimeout(() => {
+          router.push('/');
+        }, 400);
       }
     } catch (error) {
       toast({
@@ -45,7 +53,6 @@ export default function LoginPage() {
         description: 'حدث خطأ ما. يرجى المحاولة لاحقاً.',
         variant: 'destructive',
       });
-    } finally {
       setIsLoading(false);
     }
   };

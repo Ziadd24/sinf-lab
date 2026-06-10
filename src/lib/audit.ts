@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "@/lib/db";
 
 export interface AuditLogData {
   userId: string;
@@ -15,7 +13,7 @@ export interface AuditLogData {
 
 export async function logAudit(data: AuditLogData): Promise<void> {
   try {
-    await prisma.auditLog.create({
+    await db.auditLog.create({
       data: {
         userId: data.userId,
         action: data.action,
@@ -38,7 +36,7 @@ export async function getAuditHistory(
   recordId: string,
   limit: number = 50
 ) {
-  return prisma.auditLog.findMany({
+  return db.auditLog.findMany({
     where: {
       tableName,
       recordId,

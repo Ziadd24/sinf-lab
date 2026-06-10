@@ -25,7 +25,7 @@ interface SampleForResults {
     nameAr: string | null
     species: { nameEn: string; nameAr: string; icon: string | null }
   }
-  testIds: string
+  testIds: string[]
   results: {
     id: string
     resultValue: string
@@ -65,9 +65,9 @@ export function ResultsView() {
     Promise.all([
       fetch('/api/samples').then(r => r.json()),
       fetch('/api/tests').then(r => r.json()),
-    ]).then(([s, te]: [SampleForResults[], TestItem[]]) => {
-      setSamples(s)
-      setAllTests(te)
+    ]).then(([s, te]: [any, any]) => {
+      setSamples(s.data || s)
+      setAllTests(te.data || te)
       setLoading(false)
     })
   }, [])
@@ -77,7 +77,7 @@ export function ResultsView() {
   const completedSamples = samples.filter(s => s.status === 'Completed' || s.status === 'Approved')
   const selectedSample = samples.find(s => s.id === selectedSampleId)
 
-  const testIdsForSample = selectedSample ? selectedSample.testIds.split(',') : []
+  const testIdsForSample = selectedSample ? selectedSample.testIds : []
   const testsForSample = testIdsForSample.map(tid => allTests.find(t => t.id === tid)).filter(Boolean) as TestItem[]
 
   // For each test, check if there's already a result
@@ -150,7 +150,7 @@ export function ResultsView() {
 
       // Refresh
       const fresh = await fetch('/api/samples').then(r => r.json())
-      setSamples(fresh)
+      setSamples(fresh.data || fresh)
       setResultInputs({})
     } finally {
       setSaving(false)

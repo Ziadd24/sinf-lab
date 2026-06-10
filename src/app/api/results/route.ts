@@ -1,20 +1,21 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth-guard'
+import { resultCreateSchema, resultUpdateSchema, paginationSchema } from '@/lib/validators'
 import { validateResultValue } from '@/lib/validation'
 import { logAudit } from '@/lib/audit'
 
 export async function GET(request: Request) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  const auth = await requireAuth(request)
+  if (!auth.authorized) return auth.response
 
+  try {
     const { searchParams } = new URL(request.url)
     const sampleId = searchParams.get('sampleId')
-    
+    const { page, limit } = paginationSchema.parse(
+      Object.fromEntries(searchParams.entries())
+    )
+
     if (sampleId) {
       const results = await db.sampleResult.findMany({
         where: { sampleId },
@@ -24,11 +25,20 @@ export async function GET(request: Request) {
       return NextResponse.json(results)
     }
 
-    const results = await db.sampleResult.findMany({
-      orderBy: { enteredAt: 'desc' },
-      include: { catalog: true, sample: { include: { pet: { include: { species: true } } } } },
-    })
-    return NextResponse.json(results)
+    const [results, total] = await Promise.all([
+      db.sampleResult.findMany({
+        orderBy: { enteredAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          catalog: true,
+          sample: { include: { pet: { include: { species: true } } } },
+        },
+      }),
+      db.sampleResult.count(),
+    ])
+
+    return NextResponse.json({ data: results, total, page, limit })
   } catch (error) {
     console.error('Error fetching results:', error)
     return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 })
@@ -36,14 +46,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  const auth = await requireAuth(request)
+  if (!auth.authorized) return auth.response
 
+  try {
     const body = await request.json()
-    const { catalogId, resultValue, sampleId, labComments, ...data } = body
+    const validated = resultCreateSchema.parse(body)
+    const { catalogId, resultValue, sampleId, labComments } = validated
 
     // Validate result value
     const validation = await validateResultValue(catalogId, resultValue, sampleId)
@@ -71,15 +80,13 @@ export async function POST(request: Request) {
         sampleId,
         labComments,
         isPanic,
-        enteredBy: session.user.id,
-        ...data,
+        enteredBy: auth.userId,
       },
       include: { catalog: true },
     })
 
-    // Log audit
     await logAudit({
-      userId: session.user.id,
+      userId: auth.userId,
       action: 'create',
       tableName: 'SampleResult',
       recordId: result.id,
@@ -91,30 +98,38 @@ export async function POST(request: Request) {
       ...result,
       warning: validation.warning,
     }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
+    }
     console.error('Error creating result:', error)
     return NextResponse.json({ error: 'Failed to create result' }, { status: 500 })
   }
 }
 
 export async function PUT(request: Request) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  const auth = await requireAuth(request)
+  if (!auth.authorized) return auth.response
 
+  try {
     const body = await request.json()
-    const { id, catalogId, resultValue, labComments, approvedBy, approvedAt, ...data } = body
+    const validated = resultUpdateSchema.parse(body)
+    const { id, resultValue, labComments } = validated
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
 
     // Get old values for audit
     const oldResult = await db.sampleResult.findUnique({ where: { id } })
+    if (!oldResult) {
+      return NextResponse.json({ error: 'Result not found' }, { status: 404 })
+    }
 
     // Validate result value if changed
-    let isPanic = data.isPanic
-    if (resultValue !== undefined && catalogId) {
-      const validation = await validateResultValue(catalogId, resultValue, oldResult?.sampleId || '')
+    let isPanic = oldResult.isPanic
+    if (resultValue !== undefined) {
+      const catalogId = oldResult.catalogId
+      const sampleId = oldResult.sampleId
+
+      const validation = await validateResultValue(catalogId, resultValue, sampleId)
       if (!validation.valid) {
         return NextResponse.json(
           { error: validation.error, warning: validation.warning },
@@ -130,32 +145,42 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Only DOCTOR or ADMIN can approve
+    const isApproval = body.approvedBy !== undefined
+    if (isApproval && auth.role !== 'DOCTOR' && auth.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Only doctors can approve results' }, { status: 403 })
+    }
+
+    const updateData: any = {}
+    if (resultValue !== undefined) updateData.resultValue = resultValue
+    if (labComments !== undefined) updateData.labComments = labComments
+    updateData.isPanic = isPanic
+    if (isApproval) {
+      updateData.approvedBy = auth.userId
+      updateData.approvedAt = new Date()
+    }
+
     const result = await db.sampleResult.update({
       where: { id },
-      data: {
-        resultValue,
-        labComments,
-        isPanic,
-        approvedBy: approvedBy || undefined,
-        approvedAt: approvedAt || undefined,
-        ...data,
-      },
+      data: updateData,
       include: { catalog: true },
     })
 
-    // Log audit
     await logAudit({
-      userId: session.user.id,
-      action: approvedBy ? 'approve' : 'update',
+      userId: auth.userId,
+      action: isApproval ? 'approve' : 'update',
       tableName: 'SampleResult',
       recordId: id,
-      description: approvedBy ? 'Approved sample result' : 'Updated sample result',
+      description: isApproval ? 'Approved sample result' : 'Updated sample result',
       oldValue: oldResult ? { resultValue: oldResult.resultValue, labComments: oldResult.labComments } : undefined,
-      newValue: { resultValue, labComments, isPanic, approvedBy },
+      newValue: updateData,
     })
 
     return NextResponse.json(result)
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
+    }
     console.error('Error updating result:', error)
     return NextResponse.json({ error: 'Failed to update result' }, { status: 500 })
   }

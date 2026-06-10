@@ -1,7 +1,11 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth-guard'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAuth(request)
+  if (!auth.authorized) return auth.response
+
   try {
     // Basic counts
     const [totalSamples, activeSamples, totalClinics, totalPets, totalTests] = await Promise.all([
@@ -15,17 +19,23 @@ export async function GET() {
     // Panic alerts count
     const panicAlerts = await db.sampleResult.count({ where: { isPanic: true } })
 
-    // Revenue - sum of paid amounts this month
+    // Revenue - sum of paid amounts this month (optimized with aggregation)
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const paidInvoices = await db.invoice.findMany({
-      where: { paidAmount: { gt: 0 } },
-      select: { paidAmount: true, totalAmount: true, status: true, createdAt: true },
-    })
-    const revenueThisMonth = paidInvoices
-      .filter(inv => new Date(inv.createdAt) >= startOfMonth)
-      .reduce((sum, inv) => sum + inv.paidAmount, 0)
-    const totalRevenue = paidInvoices.reduce((sum, inv) => sum + inv.paidAmount, 0)
+
+    const [revenueThisMonthResult, totalRevenueResult] = await Promise.all([
+      db.invoice.aggregate({
+        _sum: { paidAmount: true },
+        where: { paidAmount: { gt: 0 }, createdAt: { gte: startOfMonth } },
+      }),
+      db.invoice.aggregate({
+        _sum: { paidAmount: true },
+        where: { paidAmount: { gt: 0 } },
+      }),
+    ])
+
+    const revenueThisMonth = revenueThisMonthResult._sum.paidAmount || 0
+    const totalRevenue = totalRevenueResult._sum.paidAmount || 0
 
     // Invoice status breakdown
     const invoiceStats = await db.invoice.groupBy({
@@ -48,14 +58,15 @@ export async function GET() {
       })
     }
 
-    // Samples by species
-    const allSamples = await db.labSample.findMany({
-      include: { pet: { include: { species: true } } },
+    // Samples by species — optimized with aggregation instead of loading all samples
+    const samplesWithSpecies = await db.labSample.findMany({
+      select: { pet: { select: { speciesId: true, species: { select: { id: true, nameEn: true, nameAr: true } } } } },
     })
+
     const speciesMap = new Map<string, { name: string; nameAr: string; count: number; fill: string }>()
     const speciesColors = ['#053e76', '#2b649c', '#1a5c96', '#3d7ab5', '#0a2d5c']
     let colorIdx = 0
-    for (const sample of allSamples) {
+    for (const sample of samplesWithSpecies) {
       const sp = sample.pet.species
       if (!speciesMap.has(sp.id)) {
         speciesMap.set(sp.id, {

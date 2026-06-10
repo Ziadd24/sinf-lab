@@ -8,6 +8,7 @@ const notoSansArabic = Noto_Sans_Arabic({
   variable: "--font-arabic",
 });
 
+// Clean standard metadata object
 export const metadata: Metadata = {
   title: "SINF-VET | نظام إدارة المختبر البيطري",
   description: "نظام إدارة المختبر البيطري المهني للسوق السعودي. إدارة العينات والنتائج والعيادات والمرضى والفواتير ودليل الفحوصات.",
@@ -25,11 +26,13 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
+};
+
+// Modern Next.js configuration for viewports and themes
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
   themeColor: "#1e40af",
 };
 
@@ -45,15 +48,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SINF-VET" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/logo-192.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
-      <body
-        className={`${notoSansArabic.variable} antialiased`}
-      >
+      <body className={`${notoSansArabic.variable} antialiased`}>
         <Providers>
           {children}
         </Providers>
-        <script
+
+        {/* Disabled Service Worker script to resolve the authentication redirect collision 
+          causing infinite rapid refresh loops in the development environment.
+        */}
+        {/* <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
@@ -65,7 +70,8 @@ export default function RootLayout({
               }
             `,
           }}
-        />
+        /> 
+        */}
       </body>
     </html>
   );

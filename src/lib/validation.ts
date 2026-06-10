@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { db } from "@/lib/db";
 
 export interface ValidationError {
   valid: boolean;
@@ -25,7 +23,7 @@ export async function validateResultValue(
     }
 
     // Get validation rules for this test
-    const rules = await prisma.validationRule.findUnique({
+    const rules = await db.validationRule.findUnique({
       where: { catalogId },
     });
 
@@ -67,12 +65,12 @@ export async function validateResultValue(
         Date.now() - rules.allowDuplicateWithin * 60 * 60 * 1000
       );
 
-      const recentResult = await prisma.sampleResult.findFirst({
+      const recentResult = await db.sampleResult.findFirst({
         where: {
           catalogId,
           sample: {
             petId: (
-              await prisma.labSample.findUnique({
+              await db.labSample.findUnique({
                 where: { id: sampleId },
                 select: { petId: true },
               })
@@ -113,7 +111,7 @@ export async function checkResultLogic(
   // Additional custom logic can be added here based on test type
   // For example: if test is glucose and result is 1000, that's suspicious
 
-  const catalog = await prisma.testCatalog.findUnique({
+  const catalog = await db.testCatalog.findUnique({
     where: { id: catalogId },
   });
 

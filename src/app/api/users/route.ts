@@ -1,20 +1,16 @@
-import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { hashPassword } from "@/lib/auth";
-import { logAudit } from "@/lib/audit";
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth-guard'
+import { userCreateSchema } from '@/lib/validators'
+import { hashPassword } from '@/lib/auth'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: Request) {
+  const auth = await requireAuth(request, ['ADMIN'])
+  if (!auth.authorized) return auth.response
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       select: {
         id: true,
         email: true,
@@ -24,47 +20,38 @@ export async function GET(request: Request) {
         active: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
-    });
+      orderBy: { createdAt: 'desc' },
+    })
 
-    return Response.json(users);
+    return Response.json(users)
   } catch (error) {
-    return Response.json({ error: "Failed to fetch users" }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch users' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth(request, ['ADMIN'])
+  if (!auth.authorized) return auth.response
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { email, password, fullName, fullNameAr, role } = body;
-
-    if (!email || !password || !fullName || !role) {
-      return Response.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json()
+    const validated = userCreateSchema.parse(body)
+    const { email, password, fullName, fullNameAr, role } = validated
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email },
-    });
+    })
 
     if (existingUser) {
-      return Response.json({ error: "User already exists" }, { status: 400 });
+      return Response.json({ error: 'User already exists' }, { status: 400 })
     }
 
     // Hash password
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(password)
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -81,24 +68,24 @@ export async function POST(request: Request) {
         role: true,
         active: true,
       },
-    });
+    })
 
     // Log audit
     await logAudit({
-      userId: session.user.id,
-      action: "create",
-      tableName: "User",
+      userId: auth.userId,
+      action: 'create',
+      tableName: 'User',
       recordId: user.id,
       description: `Created user: ${email}`,
       newValue: { email, fullName, role },
-    });
+    })
 
-    return Response.json(user, { status: 201 });
-  } catch (error) {
-    console.error("Error creating user:", error);
-    return Response.json(
-      { error: "Failed to create user" },
-      { status: 500 }
-    );
+    return Response.json(user, { status: 201 })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return Response.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
+    }
+    console.error('Error creating user:', error)
+    return Response.json({ error: 'Failed to create user' }, { status: 500 })
   }
 }

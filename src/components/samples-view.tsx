@@ -31,7 +31,7 @@ interface Sample {
   invoiceId: string | null
   referringDoctor: string | null
   referringDoctorAr: string | null
-  testIds: string
+  testIds: string[]
   status: string
   priority: string
   notes: string | null
@@ -89,7 +89,7 @@ export function SamplesView() {
       fetch('/api/tests').then(r => r.json()),
       fetch('/api/clinics').then(r => r.json()),
     ]).then(([s, p, te, c]) => {
-      setSamples(s); setPets(p); setTests(te); setClinics(c); setLoading(false)
+      setSamples(s.data || s); setPets(p.data || p); setTests(te.data || te); setClinics(c.data || c); setLoading(false)
     })
   }
 
@@ -131,12 +131,12 @@ export function SamplesView() {
       body: JSON.stringify({
         barcode,
         petId: formPetId,
-        clinicId: formClinicId || pet?.species?.nameEn ? undefined : null,
-        referringDoctor: formDoctor,
-        referringDoctorAr: formDoctorAr,
-        testIds: formTestIds.join(','),
+        clinicId: formClinicId || undefined,
+        referringDoctor: formDoctor || undefined,
+        referringDoctorAr: formDoctorAr || undefined,
+        testIds: formTestIds,
         priority: formPriority,
-        notes: formNotes,
+        notes: formNotes || undefined,
       }),
     })
     setShowNewDialog(false)

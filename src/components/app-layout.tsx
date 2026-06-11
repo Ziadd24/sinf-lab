@@ -10,6 +10,7 @@ import { ClinicsView } from '@/components/clinics-view'
 import { PatientsView } from '@/components/patients-view'
 import { InvoicesView } from '@/components/invoices-view'
 import { TestCatalogView } from '@/components/test-catalog-view'
+import { ReportView } from '@/components/report-view'
 import { Bell, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ const navTitles: Record<NavItem, string> = {
   dashboard: 'لوحة التحكم',
   samples: 'عينات المختبر',
   results: 'نتائج الفحوصات',
+  reports: 'التقارير الطبية',
   clinics: 'العيادات',
   patients: 'المرضى',
   invoices: 'الفواتير',
@@ -34,6 +36,7 @@ export function AppLayout() {
       case 'dashboard': return <DashboardView />
       case 'samples': return <SamplesView />
       case 'results': return <ResultsView />
+      case 'reports': return <ReportView />
       case 'clinics': return <ClinicsView />
       case 'patients': return <PatientsView />
       case 'invoices': return <InvoicesView />

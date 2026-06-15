@@ -6,10 +6,13 @@ const prisma = new PrismaClient()
 async function main() {
   // Seed Species
   const camel = await prisma.species.create({ data: { nameEn: 'Camel', nameAr: 'جمل', icon: '🐫' } })
-  const falcon = await prisma.species.create({ data: { nameEn: 'Falcon', nameAr: 'صقر', icon: '🦅' } })
-  const dog = await prisma.species.create({ data: { nameEn: 'Dog', nameAr: 'كلب', icon: '🐕' } })
+  const sheep = await prisma.species.create({ data: { nameEn: 'Sheep', nameAr: 'خروف', icon: '🐑' } })
+  const goat = await prisma.species.create({ data: { nameEn: 'Goat', nameAr: 'ماعز', icon: '🐐' } })
   const cat = await prisma.species.create({ data: { nameEn: 'Cat', nameAr: 'قطة', icon: '🐈' } })
   const horse = await prisma.species.create({ data: { nameEn: 'Horse', nameAr: 'حصان', icon: '🐎' } })
+  // Remapped from removed species so existing pet/test references still resolve
+  const falcon = sheep
+  const dog = goat
 
   // Seed Clinics
   const clinic1 = await prisma.clinic.create({

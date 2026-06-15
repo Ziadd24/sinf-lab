@@ -11,6 +11,7 @@ import { PatientsView } from '@/components/patients-view'
 import { InvoicesView } from '@/components/invoices-view'
 import { TestCatalogView } from '@/components/test-catalog-view'
 import { ReportView } from '@/components/report-view'
+import { QuickReportWizard } from '@/components/quick-report-wizard'
 import { Bell, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ const navTitles: Record<NavItem, string> = {
   samples: 'عينات المختبر',
   results: 'نتائج الفحوصات',
   reports: 'التقارير الطبية',
+  'quick-report': 'تقرير سريع',
   clinics: 'العيادات',
   patients: 'المرضى',
   invoices: 'الفواتير',
@@ -37,6 +39,7 @@ export function AppLayout() {
       case 'samples': return <SamplesView />
       case 'results': return <ResultsView />
       case 'reports': return <ReportView />
+      case 'quick-report': return <QuickReportWizard />
       case 'clinics': return <ClinicsView />
       case 'patients': return <PatientsView />
       case 'invoices': return <InvoicesView />

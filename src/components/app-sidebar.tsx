@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
-export type NavItem = 'dashboard' | 'samples' | 'results' | 'reports' | 'clinics' | 'patients' | 'invoices' | 'tests'
+export type NavItem = 'dashboard' | 'samples' | 'results' | 'reports' | 'quick-report' | 'clinics' | 'patients' | 'invoices' | 'tests'
 
 interface AppSidebarProps {
   activeNav: NavItem
@@ -32,6 +32,7 @@ const navItems: { id: NavItem; icon: React.ElementType; labelAr: string }[] = [
   { id: 'samples', icon: FlaskConical, labelAr: 'العينات' },
   { id: 'results', icon: FileCheck, labelAr: 'النتائج' },
   { id: 'reports', icon: ClipboardList, labelAr: 'التقارير الطبية' },
+  { id: 'quick-report', icon: ClipboardList, labelAr: 'تقرير سريع' },
   { id: 'clinics', icon: Building2, labelAr: 'العيادات' },
   { id: 'patients', icon: Heart, labelAr: 'المرضى' },
   { id: 'invoices', icon: Receipt, labelAr: 'الفواتير' },

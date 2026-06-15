@@ -56,6 +56,8 @@ interface ResultRow {
   testNameEn: string
   unit: string
   refRange: string
+  minNormal: number | null
+  maxNormal: number | null
   value: string
 }
 
@@ -71,9 +73,43 @@ interface WizardData {
 const refRangeOf = (t: TestCatalogItem) =>
   t.minNormal !== null && t.maxNormal !== null ? `${t.minNormal} – ${t.maxNormal}` : '—'
 
+type ResultStatus = 'normal' | 'low' | 'high' | 'unknown'
+
+/** Evaluate a result value against the normal range. Anything 20%+ beyond
+ *  the range is treated as critical (panic) for stronger highlighting. */
+const evaluateResult = (
+  value: string,
+  minNormal: number | null,
+  maxNormal: number | null
+): { status: ResultStatus; critical: boolean } => {
+  const num = parseFloat(value)
+  if (value.trim() === '' || isNaN(num) || minNormal === null || maxNormal === null) {
+    return { status: 'unknown', critical: false }
+  }
+  if (num < minNormal) {
+    const critical = num < minNormal * 0.8
+    return { status: 'low', critical }
+  }
+  if (num > maxNormal) {
+    const critical = num > maxNormal * 1.2
+    return { status: 'high', critical }
+  }
+  return { status: 'normal', critical: false }
+}
+
+/** Generate a unique report ID, e.g. RPT-20260615-4F2A */
+const generateReportId = () => {
+  const date = new Date()
+  const datePart = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+  const randomPart = Math.random().toString(16).slice(2, 6).toUpperCase()
+  return `RPT-${datePart}-${randomPart}`
+}
+
 export function QuickReportWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const catalog = TEST_CATALOG
+  const [reportId] = useState(generateReportId)
+  const [reportTimestamp] = useState(() => new Date())
 
   const [data, setData] = useState<WizardData>({
     customerName: '',
@@ -108,6 +144,8 @@ export function QuickReportWizard() {
             testNameEn: test.testNameEn,
             unit: test.unit || '—',
             refRange: refRangeOf(test),
+            minNormal: test.minNormal,
+            maxNormal: test.maxNormal,
             value: '',
           },
         ],
@@ -256,31 +294,64 @@ export function QuickReportWizard() {
                     <th className="text-center py-2 px-3 w-28">النتيجة</th>
                     <th className="text-center py-2 px-3 w-20">الوحدة</th>
                     <th className="text-center py-2 px-3 w-28">المعدل الطبيعي</th>
+                    <th className="text-center py-2 px-3 w-24">الحالة</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.results.map(r => (
-                    <tr key={r.catalogId} className="border-t">
-                      <td className="py-2 px-3">
-                        <span className="font-medium">{r.testNameAr}</span>
-                        <span className="text-muted-foreground text-xs"> ({r.testNameEn})</span>
-                      </td>
-                      <td className="py-2 px-3">
-                        <Input
-                          value={r.value}
-                          onChange={e => updateResultValue(r.catalogId, e.target.value)}
-                          placeholder="القيمة"
-                          className="text-center h-8"
-                          autoFocus={data.results[0]?.catalogId === r.catalogId}
-                        />
-                      </td>
-                      <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
-                      <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
-                    </tr>
-                  ))}
+                  {data.results.map(r => {
+                    const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
+                    const rowBg =
+                      critical ? 'bg-red-50' :
+                      status === 'low' || status === 'high' ? 'bg-amber-50' :
+                      ''
+                    return (
+                      <tr key={r.catalogId} className={`border-t ${rowBg}`}>
+                        <td className="py-2 px-3">
+                          <span className="font-medium">{r.testNameAr}</span>
+                          <span className="text-muted-foreground text-xs"> ({r.testNameEn})</span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <Input
+                            value={r.value}
+                            onChange={e => updateResultValue(r.catalogId, e.target.value)}
+                            placeholder="القيمة"
+                            className={`text-center h-8 ${
+                              critical ? 'border-red-400 text-red-700 font-bold focus-visible:ring-red-400' :
+                              status === 'low' || status === 'high' ? 'border-amber-400 text-amber-700 focus-visible:ring-amber-400' :
+                              ''
+                            }`}
+                            autoFocus={data.results[0]?.catalogId === r.catalogId}
+                          />
+                        </td>
+                        <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
+                        <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
+                        <td className="py-2 px-3 text-center">
+                          {status === 'unknown' && <span className="text-xs text-muted-foreground">—</span>}
+                          {status === 'normal' && <span className="text-xs text-green-700 font-medium">طبيعي</span>}
+                          {status === 'low' && (
+                            <span className={`text-xs font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>
+                              {critical ? 'منخفض جداً ⚠' : 'منخفض'}
+                            </span>
+                          )}
+                          {status === 'high' && (
+                            <span className={`text-xs font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>
+                              {critical ? 'مرتفع جداً ⚠' : 'مرتفع'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
+
+            {data.results.some(r => evaluateResult(r.value, r.minNormal, r.maxNormal).critical) && (
+              <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                <span className="font-semibold">⚠ تنبيه:</span>
+                <span>توجد قيم حرجة خارج النطاق الطبيعي بشكل كبير — يرجى مراجعتها بعناية</span>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium mb-1 block">ملاحظات الطبيب</label>
@@ -330,7 +401,10 @@ export function QuickReportWizard() {
             <CardContent className="pt-6 space-y-4">
               <div className="text-center border-b pb-3">
                 <h2 className="text-lg font-bold">تقرير نتائج التحليل</h2>
-                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString('ar-SA')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {reportTimestamp.toLocaleDateString('ar-SA')} — {reportTimestamp.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+                <p className="text-xs font-mono text-muted-foreground mt-1">{reportId}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -347,19 +421,35 @@ export function QuickReportWizard() {
                     <th className="text-center py-2 px-3">النتيجة</th>
                     <th className="text-center py-2 px-3">الوحدة</th>
                     <th className="text-center py-2 px-3">المعدل الطبيعي</th>
+                    <th className="text-center py-2 px-3">الحالة</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.results.filter(r => r.value).map(r => (
-                    <tr key={r.catalogId} className="border-b">
-                      <td className="py-2 px-3 font-medium">{r.testNameAr}</td>
-                      <td className="py-2 px-3 text-center font-mono font-bold">{r.value}</td>
-                      <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
-                      <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
-                    </tr>
-                  ))}
+                  {data.results.filter(r => r.value).map(r => {
+                    const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
+                    return (
+                      <tr key={r.catalogId} className={`border-b ${critical ? 'bg-red-50' : status !== 'normal' && status !== 'unknown' ? 'bg-amber-50' : ''}`}>
+                        <td className="py-2 px-3 font-medium">{r.testNameAr}</td>
+                        <td className={`py-2 px-3 text-center font-mono font-bold ${critical ? 'text-red-700' : status !== 'normal' && status !== 'unknown' ? 'text-amber-700' : ''}`}>{r.value}</td>
+                        <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
+                        <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
+                        <td className="py-2 px-3 text-center text-xs">
+                          {status === 'unknown' && '—'}
+                          {status === 'normal' && <span className="text-green-700 font-medium">طبيعي</span>}
+                          {status === 'low' && <span className={`font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>{critical ? 'منخفض جداً' : 'منخفض'}</span>}
+                          {status === 'high' && <span className={`font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>{critical ? 'مرتفع جداً' : 'مرتفع'}</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
+
+              {data.results.some(r => evaluateResult(r.value, r.minNormal, r.maxNormal).critical) && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                  ⚠ تحتوي هذه النتائج على قيم حرجة تستوجب المراجعة الفورية
+                </div>
+              )}
 
               {data.doctorNotes && (
                 <div className="border rounded-md p-3 bg-muted/30">
@@ -368,8 +458,9 @@ export function QuickReportWizard() {
                 </div>
               )}
 
-              <div className="border-t pt-3 text-xs text-muted-foreground text-center">
-                توقيع الطبيب: ................................
+              <div className="border-t pt-3 text-xs text-muted-foreground flex justify-between items-center">
+                <span>توقيع الطبيب: ................................</span>
+                <span className="font-mono">{reportId}</span>
               </div>
             </CardContent>
           </Card>

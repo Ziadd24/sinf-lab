@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Printer, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Printer, ArrowRight, ArrowLeft, Share2, Copy, Check, Search, History, Loader2 } from 'lucide-react'
 
 const ANIMALS = [
   { value: 'Camel', labelAr: 'جمل', icon: '🐫' },
@@ -29,25 +29,34 @@ interface TestCatalogItem {
   minNormal: number | null
   maxNormal: number | null
   unit: string | null
+  price: number
 }
 
 // Static test catalog — no database needed for Step 1
 const TEST_CATALOG: TestCatalogItem[] = [
-  { id: 'CBC',     testCode: 'CBC',     testNameEn: 'Complete Blood Count',          testNameAr: 'تعداد دم كامل',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null, maxNormal: null, unit: null },
-  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9,    maxNormal: 18,   unit: 'g/dL' },
-  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,  maxNormal: 19.5, unit: '10³/µL' },
-  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume',             testNameAr: 'حجم الخلايا المضغوط',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 24,   maxNormal: 38,   unit: '%' },
-  { id: 'RBC',     testCode: 'RBC',     testNameEn: 'RBC Count',                      testNameAr: 'عدد كريات الدم الحمراء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.0,  maxNormal: 10.5, unit: '10⁶/µL' },
-  { id: 'BIO-01',  testCode: 'BIO-01',  testNameEn: 'Liver Panel (ALT, AST, ALP)',    testNameAr: 'فحص الكبد (ALT, AST, ALP)',  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null },
-  { id: 'BUN',     testCode: 'BUN',     testNameEn: 'BUN (Urea)',                     testNameAr: 'يوريا الدم',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 7,    maxNormal: 36,   unit: 'mg/dL' },
-  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 1.0,  maxNormal: 2.5,  unit: 'mg/dL' },
-  { id: 'GLU',     testCode: 'GLU',     testNameEn: 'Glucose',                        testNameAr: 'جلوكوز',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 60,   maxNormal: 120,  unit: 'mg/dL' },
-  { id: 'TP',      testCode: 'TP',      testNameEn: 'Total Protein',                  testNameAr: 'بروتين كلي',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 5.5,  maxNormal: 7.5,  unit: 'g/dL' },
-  { id: 'MIC-01',  testCode: 'MIC-01',  testNameEn: 'Bacterial Culture & Sensitivity',testNameAr: 'زراعة بكتيرية وحساسية',     category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null },
-  { id: 'MIC-02',  testCode: 'MIC-02',  testNameEn: 'Fungal Culture',                 testNameAr: 'زراعة فطرية',                category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null },
-  { id: 'PAR-01',  testCode: 'PAR-01',  testNameEn: 'Fecal Examination',              testNameAr: 'فحص براز',                   category: 'Parasitology',   categoryAr: 'طفيليات',         minNormal: null, maxNormal: null, unit: null },
-  { id: 'HORM-01', testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)',         testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,  maxNormal: 4.0,  unit: 'µg/dL' },
-  { id: 'PREP-EQ', testCode: 'PREP-EQ', testNameEn: 'Pre-Purchase Exam (Equine)',     testNameAr: 'فحص ما قبل الشراء (خيول)',   category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null },
+  { id: 'CBC',     testCode: 'CBC',     testNameEn: 'Complete Blood Count',          testNameAr: 'تعداد دم كامل',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null, maxNormal: null, unit: null,     price: 80 },
+  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9,    maxNormal: 18,   unit: 'g/dL',   price: 35 },
+  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,  maxNormal: 19.5, unit: '10³/µL', price: 40 },
+  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume',             testNameAr: 'حجم الخلايا المضغوط',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 24,   maxNormal: 38,   unit: '%',      price: 30 },
+  { id: 'RBC',     testCode: 'RBC',     testNameEn: 'RBC Count',                      testNameAr: 'عدد كريات الدم الحمراء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.0,  maxNormal: 10.5, unit: '10⁶/µL', price: 35 },
+  { id: 'BIO-01',  testCode: 'BIO-01',  testNameEn: 'Liver Panel (ALT, AST, ALP)',    testNameAr: 'فحص الكبد (ALT, AST, ALP)',  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null,     price: 120 },
+  { id: 'BUN',     testCode: 'BUN',     testNameEn: 'BUN (Urea)',                     testNameAr: 'يوريا الدم',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 7,    maxNormal: 36,   unit: 'mg/dL',  price: 45 },
+  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 1.0,  maxNormal: 2.5,  unit: 'mg/dL',  price: 45 },
+  { id: 'GLU',     testCode: 'GLU',     testNameEn: 'Glucose',                        testNameAr: 'جلوكوز',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 60,   maxNormal: 120,  unit: 'mg/dL',  price: 30 },
+  { id: 'TP',      testCode: 'TP',      testNameEn: 'Total Protein',                  testNameAr: 'بروتين كلي',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 5.5,  maxNormal: 7.5,  unit: 'g/dL',   price: 35 },
+  { id: 'MIC-01',  testCode: 'MIC-01',  testNameEn: 'Bacterial Culture & Sensitivity',testNameAr: 'زراعة بكتيرية وحساسية',     category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null,     price: 150 },
+  { id: 'MIC-02',  testCode: 'MIC-02',  testNameEn: 'Fungal Culture',                 testNameAr: 'زراعة فطرية',                category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null,     price: 130 },
+  { id: 'PAR-01',  testCode: 'PAR-01',  testNameEn: 'Fecal Examination',              testNameAr: 'فحص براز',                   category: 'Parasitology',   categoryAr: 'طفيليات',         minNormal: null, maxNormal: null, unit: null,     price: 50 },
+  { id: 'HORM-01', testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)',         testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,  maxNormal: 4.0,  unit: 'µg/dL',  price: 90 },
+  { id: 'PREP-EQ', testCode: 'PREP-EQ', testNameEn: 'Pre-Purchase Exam (Equine)',     testNameAr: 'فحص ما قبل الشراء (خيول)',   category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null,     price: 200 },
+]
+
+// Quick-pick bundles — common test combinations ordered together
+const BUNDLES: { id: string; nameAr: string; testIds: string[] }[] = [
+  { id: 'routine',  nameAr: 'فحص دوري شامل',      testIds: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT'] },
+  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testIds: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC'] },
+  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testIds: ['BUN', 'CREAT', 'TP'] },
+  { id: 'prepurchase', nameAr: 'فحص ما قبل الشراء', testIds: ['PREP-EQ', 'CBC', 'BIO-01'] },
 ]
 
 interface ResultRow {
@@ -58,6 +67,22 @@ interface ResultRow {
   refRange: string
   minNormal: number | null
   maxNormal: number | null
+  price: number
+  value: string
+}
+
+interface CustomerMatch {
+  id: string
+  name: string
+  phone: string
+  animalType: string
+  animalName: string | null
+  lastReportAt: string | null
+}
+
+interface PastReportResult {
+  catalogId: string
+  testNameAr: string
   value: string
 }
 
@@ -65,6 +90,7 @@ interface WizardData {
   customerName: string
   phone: string
   animalType: string
+  animalName: string
   selectedTestIds: string[]
   results: ResultRow[]
   doctorNotes: string
@@ -115,10 +141,68 @@ export function QuickReportWizard() {
     customerName: '',
     phone: '',
     animalType: '',
+    animalName: '',
     selectedTestIds: [],
     results: [],
     doctorNotes: '',
   })
+
+  // ── Customer search / autofill ────────────────────────────────────────────
+  const [customerMatches, setCustomerMatches] = useState<CustomerMatch[]>([])
+  const [searchingCustomers, setSearchingCustomers] = useState(false)
+  const [showMatches, setShowMatches] = useState(false)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    const query = data.customerName || data.phone
+    if (!query || query.length < 2) {
+      setCustomerMatches([])
+      return
+    }
+    searchTimer.current = setTimeout(async () => {
+      setSearchingCustomers(true)
+      try {
+        const res = await fetch(`/api/quick-customers?search=${encodeURIComponent(query)}`)
+        const json = await res.json()
+        setCustomerMatches(json.data || [])
+      } catch {
+        setCustomerMatches([])
+      } finally {
+        setSearchingCustomers(false)
+      }
+    }, 350)
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [data.customerName, data.phone])
+
+  const selectCustomer = (c: CustomerMatch) => {
+    update('customerName', c.name)
+    update('phone', c.phone)
+    update('animalType', c.animalType)
+    update('animalName', c.animalName || '')
+    setShowMatches(false)
+  }
+
+  // ── Previous results for comparison ───────────────────────────────────────
+  const [previousResults, setPreviousResults] = useState<Record<string, string>>({})
+
+  const loadPreviousResults = async (phone: string) => {
+    try {
+      const res = await fetch(`/api/quick-reports?search=${encodeURIComponent(phone)}&limit=1`)
+      const json = await res.json()
+      const lastReport = json.data?.[0]
+      if (!lastReport) return
+      const map: Record<string, string> = {}
+      ;(lastReport.results as PastReportResult[]).forEach(r => { map[r.catalogId] = r.value })
+      setPreviousResults(map)
+    } catch {
+      // silent — comparison is a nice-to-have, not critical
+    }
+  }
+
+  useEffect(() => {
+    if (data.phone.length >= 7) loadPreviousResults(data.phone)
+  }, [data.phone])
 
   const update = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData(prev => ({ ...prev, [key]: value }))
@@ -146,11 +230,19 @@ export function QuickReportWizard() {
             refRange: refRangeOf(test),
             minNormal: test.minNormal,
             maxNormal: test.maxNormal,
+            price: test.price,
             value: '',
           },
         ],
       }
     })
+  }
+
+  const applyBundle = (bundle: typeof BUNDLES[0]) => {
+    const testsToAdd = bundle.testIds
+      .map(id => catalog.find(t => t.id === id))
+      .filter((t): t is TestCatalogItem => !!t && !data.selectedTestIds.includes(t.id))
+    testsToAdd.forEach(test => toggleTest(test))
   }
 
   const updateResultValue = (catalogId: string, value: string) =>
@@ -166,8 +258,96 @@ export function QuickReportWizard() {
     return acc
   }, {})
 
+  const totalPrice = data.results.reduce((sum, r) => sum + r.price, 0)
+
   const canGoStep2 = data.customerName && data.phone && data.animalType && data.selectedTestIds.length > 0
   const canGoStep3 = data.results.some(r => r.value.trim() !== '')
+
+  // ── Save to history ───────────────────────────────────────────────────────
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  const saveToHistory = async () => {
+    setSaveState('saving')
+    try {
+      const res = await fetch('/api/quick-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId,
+          customerName: data.customerName,
+          phone: data.phone,
+          animalType: data.animalType,
+          animalName: data.animalName || undefined,
+          results: data.results.filter(r => r.value).map(r => {
+            const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
+            return {
+              catalogId: r.catalogId,
+              testNameAr: r.testNameAr,
+              testNameEn: r.testNameEn,
+              unit: r.unit,
+              refRange: r.refRange,
+              value: r.value,
+              status,
+              critical,
+            }
+          }),
+          doctorNotes: data.doctorNotes || undefined,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setSaveState('saved')
+    } catch {
+      setSaveState('error')
+    }
+  }
+
+  // Auto-save once when entering Step 3
+  useEffect(() => {
+    if (step === 3 && saveState === 'idle') saveToHistory()
+  }, [step])
+
+  // ── Share as text (WhatsApp-ready) ────────────────────────────────────────
+  const [copied, setCopied] = useState(false)
+
+  const buildShareText = () => {
+    const animal = ANIMALS.find(a => a.value === data.animalType)
+    const lines = [
+      `تقرير نتائج التحليل — ${reportId}`,
+      `${reportTimestamp.toLocaleDateString('ar-SA')}`,
+      ``,
+      `العميل: ${data.customerName}`,
+      `الحيوان: ${animal?.icon || ''} ${animal?.labelAr || ''}${data.animalName ? ' — ' + data.animalName : ''}`,
+      ``,
+      `النتائج:`,
+    ]
+    data.results.filter(r => r.value).forEach(r => {
+      const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
+      const flag = critical ? ' ⚠️ حرج' : status === 'low' ? ' (منخفض)' : status === 'high' ? ' (مرتفع)' : ''
+      lines.push(`• ${r.testNameAr}: ${r.value} ${r.unit !== '—' ? r.unit : ''}${flag}`)
+    })
+    if (data.doctorNotes) {
+      lines.push(``, `ملاحظات الطبيب:`, data.doctorNotes)
+    }
+    return lines.join('\n')
+  }
+
+  const handleCopyShare = async () => {
+    try {
+      await navigator.clipboard.writeText(buildShareText())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard may be unavailable — silent fail is fine here
+    }
+  }
+
+  const handleWhatsAppShare = () => {
+    const text = encodeURIComponent(buildShareText())
+    const phoneDigits = data.phone.replace(/\D/g, '')
+    window.open(`https://wa.me/${phoneDigits}?text=${text}`, '_blank')
+  }
+
+  const handlePrint = () => window.print()
 
   return (
     <div className="space-y-4">
@@ -195,23 +375,50 @@ export function QuickReportWizard() {
           <CardHeader><CardTitle className="text-base">استلام العميل</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+              <div className="relative">
                 <label className="text-sm font-medium mb-1 block">اسم العميل</label>
-                <Input
-                  value={data.customerName}
-                  onChange={e => update('customerName', e.target.value)}
-                  placeholder="أدخل اسم العميل"
-                />
+                <div className="relative">
+                  <Input
+                    value={data.customerName}
+                    onChange={e => { update('customerName', e.target.value); setShowMatches(true) }}
+                    onFocus={() => setShowMatches(true)}
+                    placeholder="أدخل اسم العميل"
+                  />
+                  {searchingCustomers && (
+                    <Loader2 className="w-4 h-4 animate-spin absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  )}
+                </div>
+                {showMatches && customerMatches.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-md max-h-56 overflow-y-auto">
+                    {customerMatches.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => selectCustomer(c)}
+                        className="w-full text-right px-3 py-2 text-sm hover:bg-muted/50 flex items-center justify-between border-b last:border-0"
+                      >
+                        <span>
+                          <span className="font-medium">{c.name}</span>
+                          <span className="text-muted-foreground text-xs mr-2">{c.phone}</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <History className="w-3 h-3" />
+                          {ANIMALS.find(a => a.value === c.animalType)?.icon} {c.animalName || ANIMALS.find(a => a.value === c.animalType)?.labelAr}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">رقم الهاتف</label>
                 <Input
                   value={data.phone}
-                  onChange={e => update('phone', e.target.value)}
+                  onChange={e => { update('phone', e.target.value); setShowMatches(true) }}
+                  onFocus={() => setShowMatches(true)}
                   placeholder="05XXXXXXXX"
                 />
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <label className="text-sm font-medium mb-1 block">نوع الحيوان</label>
                 <Select value={data.animalType} onValueChange={v => update('animalType', v)}>
                   <SelectTrigger><SelectValue placeholder="اختر نوع الحيوان" /></SelectTrigger>
@@ -224,6 +431,26 @@ export function QuickReportWizard() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">اسم الحيوان (اختياري)</label>
+                <Input
+                  value={data.animalName}
+                  onChange={e => update('animalName', e.target.value)}
+                  placeholder="مثال: نجمة"
+                />
+              </div>
+            </div>
+
+            {/* Quick-pick bundles */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">باقات سريعة</label>
+              <div className="flex flex-wrap gap-2">
+                {BUNDLES.map(b => (
+                  <Button key={b.id} type="button" variant="outline" size="sm" onClick={() => applyBundle(b)} className="text-xs">
+                    {b.nameAr} ({b.testIds.length})
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Analysis package picker */}
@@ -235,38 +462,43 @@ export function QuickReportWizard() {
                 )}
               </label>
 
-              {catalog.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">لا توجد فحوصات متاحة في الدليل</p>
-              ) : (
-                <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
-                  {Object.entries(groupedCatalog).map(([category, tests]) => (
-                    <div key={category}>
-                      <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground sticky top-0">
-                        {category}
-                      </div>
-                      {tests.map(test => (
-                        <label
-                          key={test.id}
-                          className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm"
-                        >
-                          <Checkbox
-                            checked={data.selectedTestIds.includes(test.id)}
-                            onCheckedChange={() => toggleTest(test)}
-                          />
-                          <div className="flex-1">
-                            <span className="font-medium">{test.testNameAr}</span>
-                            <span className="text-muted-foreground text-xs"> ({test.testNameEn})</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {test.unit || '—'} · {refRangeOf(test)}
-                          </span>
-                        </label>
-                      ))}
+              <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
+                {Object.entries(groupedCatalog).map(([category, tests]) => (
+                  <div key={category}>
+                    <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground sticky top-0">
+                      {category}
                     </div>
-                  ))}
-                </div>
-              )}
+                    {tests.map(test => (
+                      <label
+                        key={test.id}
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={data.selectedTestIds.includes(test.id)}
+                          onCheckedChange={() => toggleTest(test)}
+                        />
+                        <div className="flex-1">
+                          <span className="font-medium">{test.testNameAr}</span>
+                          <span className="text-muted-foreground text-xs"> ({test.testNameEn})</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {test.unit || '—'} · {refRangeOf(test)}
+                        </span>
+                        <span className="text-xs font-medium text-primary w-14 text-left">{test.price} ر.س</span>
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* Running price total */}
+            {data.results.length > 0 && (
+              <div className="flex items-center justify-between bg-muted/50 rounded-md px-3 py-2 text-sm">
+                <span className="text-muted-foreground">إجمالي التكلفة ({data.results.length} فحص)</span>
+                <span className="font-bold text-base">{totalPrice} ر.س</span>
+              </div>
+            )}
 
             <div className="flex justify-end">
               <Button onClick={() => setStep(2)} disabled={!canGoStep2} className="gap-2">
@@ -282,9 +514,17 @@ export function QuickReportWizard() {
         <Card>
           <CardHeader><CardTitle className="text-base">إدخال نتائج التحاليل</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-              {data.customerName} · {ANIMALS.find(a => a.value === data.animalType)?.labelAr} · {data.results.length} فحص
+            <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 flex justify-between">
+              <span>{data.customerName} · {ANIMALS.find(a => a.value === data.animalType)?.labelAr} · {data.results.length} فحص</span>
+              <span className="font-medium">{totalPrice} ر.س</span>
             </div>
+
+            {Object.keys(previousResults).length > 0 && (
+              <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+                <History className="w-3.5 h-3.5" />
+                تم العثور على نتائج سابقة لهذا العميل — تظهر بجانب كل فحص للمقارنة
+              </div>
+            )}
 
             <div className="border rounded-md overflow-hidden">
               <table className="w-full text-sm">
@@ -292,6 +532,7 @@ export function QuickReportWizard() {
                   <tr className="bg-muted text-xs uppercase text-muted-foreground">
                     <th className="text-right py-2 px-3">الفحص</th>
                     <th className="text-center py-2 px-3 w-28">النتيجة</th>
+                    <th className="text-center py-2 px-3 w-24">السابقة</th>
                     <th className="text-center py-2 px-3 w-20">الوحدة</th>
                     <th className="text-center py-2 px-3 w-28">المعدل الطبيعي</th>
                     <th className="text-center py-2 px-3 w-24">الحالة</th>
@@ -304,6 +545,7 @@ export function QuickReportWizard() {
                       critical ? 'bg-red-50' :
                       status === 'low' || status === 'high' ? 'bg-amber-50' :
                       ''
+                    const prev = previousResults[r.catalogId]
                     return (
                       <tr key={r.catalogId} className={`border-t ${rowBg}`}>
                         <td className="py-2 px-3">
@@ -322,6 +564,9 @@ export function QuickReportWizard() {
                             }`}
                             autoFocus={data.results[0]?.catalogId === r.catalogId}
                           />
+                        </td>
+                        <td className="py-2 px-3 text-center text-xs text-muted-foreground font-mono">
+                          {prev ?? '—'}
                         </td>
                         <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
                         <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
@@ -388,14 +633,40 @@ export function QuickReportWizard() {
             }
           `}</style>
 
-          <div className="flex justify-between print:hidden">
+          <div className="flex flex-wrap justify-between gap-2 print:hidden">
             <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
               <ArrowRight className="w-4 h-4" /> السابق
             </Button>
-            <Button onClick={() => window.print()} className="gap-2">
-              <Printer className="w-4 h-4" /> طباعة
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={handleCopyShare} className="gap-2">
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'تم النسخ' : 'نسخ كنص'}
+              </Button>
+              <Button variant="outline" onClick={handleWhatsAppShare} className="gap-2 border-green-300 text-green-700 hover:bg-green-50">
+                <Share2 className="w-4 h-4" /> واتساب
+              </Button>
+              <Button onClick={handlePrint} className="gap-2">
+                <Printer className="w-4 h-4" /> طباعة
+              </Button>
+            </div>
           </div>
+
+          {saveState === 'saving' && (
+            <p className="text-xs text-muted-foreground print:hidden flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" /> جاري حفظ التقرير في السجل...
+            </p>
+          )}
+          {saveState === 'saved' && (
+            <p className="text-xs text-green-700 print:hidden flex items-center gap-1.5">
+              <Check className="w-3 h-3" /> تم حفظ التقرير في السجل بنجاح
+            </p>
+          )}
+          {saveState === 'error' && (
+            <div className="flex items-center justify-between text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 print:hidden">
+              <span>تعذر حفظ التقرير في السجل — سيظل بإمكانك طباعته الآن</span>
+              <Button variant="outline" size="sm" onClick={saveToHistory} className="h-6 text-xs">إعادة المحاولة</Button>
+            </div>
+          )}
 
           <Card className="print-summary" dir="rtl">
             <CardContent className="pt-6 space-y-4">
@@ -410,7 +681,7 @@ export function QuickReportWizard() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><span className="text-muted-foreground">اسم العميل: </span><span className="font-medium">{data.customerName}</span></div>
                 <div><span className="text-muted-foreground">رقم الهاتف: </span><span className="font-medium">{data.phone}</span></div>
-                <div><span className="text-muted-foreground">نوع الحيوان: </span><span className="font-medium">{ANIMALS.find(a => a.value === data.animalType)?.icon} {ANIMALS.find(a => a.value === data.animalType)?.labelAr}</span></div>
+                <div><span className="text-muted-foreground">نوع الحيوان: </span><span className="font-medium">{ANIMALS.find(a => a.value === data.animalType)?.icon} {ANIMALS.find(a => a.value === data.animalType)?.labelAr}{data.animalName ? ' — ' + data.animalName : ''}</span></div>
                 <div><span className="text-muted-foreground">عدد الفحوصات: </span><span className="font-medium">{data.results.filter(r => r.value).length}</span></div>
               </div>
 

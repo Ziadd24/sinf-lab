@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth-guard'
 import { resultCreateSchema, resultUpdateSchema, paginationSchema } from '@/lib/validators'
 import { validateResultValue } from '@/lib/validation'
 import { logAudit } from '@/lib/audit'
+import { deserializeSample } from '@/lib/test-ids'
 
 export async function GET(request: Request) {
   const auth = await requireAuth(request)
@@ -38,7 +39,12 @@ export async function GET(request: Request) {
       db.sampleResult.count(),
     ])
 
-    return NextResponse.json({ data: results, total, page, limit })
+    return NextResponse.json({
+      data: results.map(r => ({ ...r, sample: r.sample ? deserializeSample(r.sample) : r.sample })),
+      total,
+      page,
+      limit
+    })
   } catch (error) {
     console.error('Error fetching results:', error)
     return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 })

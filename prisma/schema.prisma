@@ -118,7 +118,7 @@ model LabSample {
   invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
   referringDoctor String?
   referringDoctorAr String?
-  testIds         String[]      // array of test catalog IDs
+  testIds         String        // comma-separated test catalog IDs (SQLite has no array type)
   status          String        @default("Collected") // Collected, In_Progress, Completed, Approved
   priority        String        @default("Normal") // Normal, Urgent, STAT
   notes           String?
@@ -191,4 +191,37 @@ model ValidationRule {
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// ─── Quick Report Wizard ────────────────────────────────────────────────────
+// Self-contained model for the single-operator quick report flow. Decoupled
+// from Pet/Clinic so the wizard works standalone without those records
+// needing to exist first.
+
+model QuickCustomer {
+  id          String        @id @default(cuid()) @map("_id")
+  name        String
+  phone       String
+  animalType  String        // Camel, Sheep, Goat, Cat, Horse
+  animalName  String?       // optional pet name, for repeat-customer lookups
+  reports     QuickReport[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([phone])
+  @@index([name])
+}
+
+model QuickReport {
+  id          String        @id @default(cuid()) @map("_id")
+  reportId    String        @unique // RPT-YYYYMMDD-XXXX, shown on the printed report
+  customerId  String
+  customer    QuickCustomer @relation(fields: [customerId], references: [id])
+  resultsJson String        // JSON-encoded array of { catalogId, testNameAr, testNameEn, unit, refRange, value, status }
+  doctorNotes String?
+  createdAt   DateTime      @default(now())
+
+  @@index([customerId])
+  @@index([createdAt])
 }

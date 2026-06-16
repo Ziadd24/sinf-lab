@@ -16,6 +16,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-guard";
 import { logAudit } from "@/lib/audit";
 import { validateResultValue } from "@/lib/validation";
+import { serializeTestIds, deserializeTestIds } from "@/lib/utils";
 import { z } from "zod";
 
 // ─── Zod schemas ────────────────────────────────────────────────────────────
@@ -174,7 +175,7 @@ export async function POST(request: Request) {
             invoiceId: inv.id,
             referringDoctor: data.referringDoctor,
             referringDoctorAr: data.referringDoctorAr,
-            testIds: data.testIds,
+            testIds: serializeTestIds(data.testIds),
             priority: data.priority,
             status: "Collected",
             notes: data.notes,
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           stage: "intake",
-          sample,
+          sample: { ...sample, testIds: deserializeTestIds(sample.testIds) },
           invoice,
           summary: {
             barcode: sample.barcode,
@@ -381,7 +382,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const pendingTests = sample.testIds.length;
+      const pendingTests = deserializeTestIds(sample.testIds).length;
       const enteredTests = sample.results.length;
       if (enteredTests < pendingTests) {
         return NextResponse.json(
@@ -550,13 +551,13 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Sample not found" }, { status: 404 });
       }
 
-      const totalTests = sample.testIds.length;
+      const totalTests = deserializeTestIds(sample.testIds).length;
       const enteredResults = sample.results.length;
       const approvedResults = sample.results.filter((r) => r.approvedAt).length;
       const panicResults = sample.results.filter((r) => r.isPanic).length;
 
       return NextResponse.json({
-        sample,
+        sample: { ...sample, testIds: deserializeTestIds(sample.testIds) },
         progress: {
           stage: sample.status,
           totalTests,
@@ -589,7 +590,10 @@ export async function GET(request: Request) {
       const allApproved = invoice.samples.every((s) => s.status === "Approved");
 
       return NextResponse.json({
-        invoice,
+        invoice: {
+          ...invoice,
+          samples: invoice.samples.map((s) => ({ ...s, testIds: deserializeTestIds(s.testIds) })),
+        },
         progress: {
           samplesTotal: invoice.samples.length,
           samplesApproved: invoice.samples.filter((s) => s.status === "Approved").length,

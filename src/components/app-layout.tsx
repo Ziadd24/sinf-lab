@@ -4,46 +4,28 @@ import { useState } from 'react'
 import { useLanguage } from '@/lib/language-context'
 import { AppSidebar, type NavItem } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard'
-import { SamplesView } from '@/components/samples-view'
-import { ResultsView } from '@/components/results-view'
-import { ClinicsView } from '@/components/clinics-view'
-import { PatientsView } from '@/components/patients-view'
-import { InvoicesView } from '@/components/invoices-view'
-import { TestCatalogView } from '@/components/test-catalog-view'
-import { ReportView } from '@/components/report-view'
 import { QuickReportWizard } from '@/components/quick-report-wizard'
+import { PastReportsView } from '@/components/past-reports-view'
 import { Bell, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const navTitles: Record<NavItem, string> = {
   dashboard: 'لوحة التحكم',
-  samples: 'عينات المختبر',
-  results: 'نتائج الفحوصات',
-  reports: 'التقارير الطبية',
   'quick-report': 'تقرير سريع',
-  clinics: 'العيادات',
-  patients: 'المرضى',
-  invoices: 'الفواتير',
-  tests: 'دليل الفحوصات',
+  'past-reports': 'سجل التقارير',
 }
 
 export function AppLayout() {
   const { t } = useLanguage()
-  const [activeNav, setActiveNav] = useState<NavItem>('dashboard')
+  const [activeNav, setActiveNav] = useState<NavItem>('quick-report')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const renderContent = () => {
     switch (activeNav) {
       case 'dashboard': return <DashboardView />
-      case 'samples': return <SamplesView />
-      case 'results': return <ResultsView />
-      case 'reports': return <ReportView />
       case 'quick-report': return <QuickReportWizard />
-      case 'clinics': return <ClinicsView />
-      case 'patients': return <PatientsView />
-      case 'invoices': return <InvoicesView />
-      case 'tests': return <TestCatalogView />
+      case 'past-reports': return <PastReportsView />
     }
   }
 
@@ -58,13 +40,9 @@ export function AppLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-16 border-b bg-card flex items-center gap-4 px-6 shrink-0">
+        <header className="h-16 border-b bg-card flex items-center gap-4 px-6 shrink-0 print:hidden">
           <h1 className="text-lg font-semibold">{navTitles[activeNav]}</h1>
           <div className="flex-1" />
-          <div className="relative w-64">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder={t('Search...', 'بحث...')} className="pr-9 h-9" />
-          </div>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="w-4 h-4" />
             <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />

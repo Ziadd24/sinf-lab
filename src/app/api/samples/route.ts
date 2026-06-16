@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-guard'
 import { sampleCreateSchema, sampleUpdateSchema, paginationSchema } from '@/lib/validators'
 import { logAudit } from '@/lib/audit'
+import { serializeTestIds, deserializeTestIds } from '@/lib/utils'
+import type { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
   const auth = await requireAuth(request)
@@ -46,7 +48,8 @@ export async function GET(request: Request) {
       db.labSample.count({ where }),
     ])
 
-    return NextResponse.json({ data: samples, total, page, limit })
+    const data = samples.map((s) => ({ ...s, testIds: deserializeTestIds(s.testIds) }))
+    return NextResponse.json({ data, total, page, limit })
   } catch (error) {
     console.error('Error fetching samples:', error)
     return NextResponse.json({ error: 'Failed to fetch samples' }, { status: 500 })
@@ -72,11 +75,12 @@ export async function POST(request: Request) {
       : 1
     const barcode = `SMP-${new Date().getFullYear()}-${String(nextNum).padStart(4, '0')}`
 
+    const { testIds, ...rest } = validated
     const sample = await db.labSample.create({
       data: {
-        ...validated,
+        ...rest,
         barcode,
-        testIds: validated.testIds, // Stored as String[] array in MongoDB
+        testIds: serializeTestIds(testIds), // comma-separated string (SQLite has no array type)
       },
     })
 
@@ -89,7 +93,7 @@ export async function POST(request: Request) {
       newValue: validated,
     })
 
-    return NextResponse.json(sample, { status: 201 })
+    return NextResponse.json({ ...sample, testIds: deserializeTestIds(sample.testIds) }, { status: 201 })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
@@ -113,7 +117,15 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Sample not found' }, { status: 404 })
     }
 
-    const sample = await db.labSample.update({ where: { id }, data })
+    const { completedAt, testIds, ...restData } = data
+
+    const updateData: Prisma.LabSampleUncheckedUpdateInput = {
+      ...restData,
+      ...(testIds ? { testIds: serializeTestIds(testIds) } : {}),
+      ...(completedAt ? { completedAt: new Date(completedAt) } : {}),
+    }
+
+    const sample = await db.labSample.update({ where: { id }, data: updateData })
 
     await logAudit({
       userId: auth.userId,
@@ -124,7 +136,7 @@ export async function PUT(request: Request) {
       newValue: data,
     })
 
-    return NextResponse.json(sample)
+    return NextResponse.json({ ...sample, testIds: deserializeTestIds(sample.testIds) })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })

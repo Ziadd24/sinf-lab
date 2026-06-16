@@ -3,22 +3,17 @@
 import { useLanguage } from '@/lib/language-context'
 import {
   LayoutDashboard,
-  FileCheck,
-  Building2,
-  Heart,
-  Receipt,
-  BookOpen,
+  ClipboardList,
+  History,
   ChevronLeft,
   ChevronRight,
-  FlaskConical,
-  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
-export type NavItem = 'dashboard' | 'samples' | 'results' | 'reports' | 'quick-report' | 'clinics' | 'patients' | 'invoices' | 'tests'
+export type NavItem = 'dashboard' | 'quick-report' | 'past-reports'
 
 interface AppSidebarProps {
   activeNav: NavItem
@@ -29,14 +24,8 @@ interface AppSidebarProps {
 
 const navItems: { id: NavItem; icon: React.ElementType; labelAr: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, labelAr: 'لوحة التحكم' },
-  { id: 'samples', icon: FlaskConical, labelAr: 'العينات' },
-  { id: 'results', icon: FileCheck, labelAr: 'النتائج' },
-  { id: 'reports', icon: ClipboardList, labelAr: 'التقارير الطبية' },
   { id: 'quick-report', icon: ClipboardList, labelAr: 'تقرير سريع' },
-  { id: 'clinics', icon: Building2, labelAr: 'العيادات' },
-  { id: 'patients', icon: Heart, labelAr: 'المرضى' },
-  { id: 'invoices', icon: Receipt, labelAr: 'الفواتير' },
-  { id: 'tests', icon: BookOpen, labelAr: 'دليل الفحوصات' },
+  { id: 'past-reports', icon: History, labelAr: 'سجل التقارير' },
 ]
 
 export function AppSidebar({

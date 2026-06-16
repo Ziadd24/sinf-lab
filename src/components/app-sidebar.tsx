@@ -5,6 +5,8 @@ import {
   LayoutDashboard,
   ClipboardList,
   History,
+  BookOpen,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -13,7 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
-export type NavItem = 'dashboard' | 'quick-report' | 'past-reports'
+export type NavItem = 'dashboard' | 'quick-report' | 'past-reports' | 'tests' | 'backup'
 
 interface AppSidebarProps {
   activeNav: NavItem
@@ -26,6 +28,8 @@ const navItems: { id: NavItem; icon: React.ElementType; labelAr: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, labelAr: 'لوحة التحكم' },
   { id: 'quick-report', icon: ClipboardList, labelAr: 'تقرير سريع' },
   { id: 'past-reports', icon: History, labelAr: 'سجل التقارير' },
+  { id: 'tests', icon: BookOpen, labelAr: 'دليل الفحوصات' },
+  { id: 'backup', icon: ShieldCheck, labelAr: 'النسخ الاحتياطي' },
 ]
 
 export function AppSidebar({
@@ -46,9 +50,9 @@ export function AppSidebar({
       <div className={cn('flex items-center gap-3 px-4 h-16 shrink-0', collapsed && 'justify-center')}>
         <div className="flex items-center justify-center shrink-0">
           {collapsed ? (
-            <Image src="/logo.png" alt="SINF-VET" width={36} height={36} className="rounded-lg" />
+            <Image src="/logo.png" alt="SINF-VET" width={36} height={36} className="rounded-lg" priority />
           ) : (
-            <Image src="/logo-wide.png" alt="SINF-VET" width={140} height={40} className="object-contain" />
+            <Image src="/logo-wide.png" alt="SINF-VET" width={140} height={40} className="object-contain" priority />
           )}
         </div>
       </div>

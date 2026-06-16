@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,15 +75,16 @@ export function PastReportsView() {
 
   if (selected) {
     const animal = ANIMAL_LABELS[selected.customer.animalType]
+    const reportTimestamp = new Date(selected.createdAt)
     return (
       <div className="space-y-4">
         <style>{`
           @media print {
             body * { visibility: hidden !important; }
             .print-summary, .print-summary * { visibility: visible !important; }
-            .print-summary { position: absolute; inset: 0; margin: 0; padding: 24px 32px; }
+            .print-summary { position: absolute; inset: 0; margin: 0; }
             .print\\:hidden { display: none !important; }
-            @page { margin: 1.5cm; size: A4; }
+            @page { margin: 0; size: A4; }
           }
         `}</style>
 
@@ -95,73 +97,100 @@ export function PastReportsView() {
           </Button>
         </div>
 
-        <Card className="print-summary" dir="rtl">
-          <CardContent className="pt-6 space-y-4">
-            <div className="text-center border-b pb-3">
-              <h2 className="text-lg font-bold">تقرير نتائج التحليل</h2>
-              <p className="text-sm text-muted-foreground">
-                {new Date(selected.createdAt).toLocaleDateString('ar-SA')} — {new Date(selected.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-              <p className="text-xs font-mono text-muted-foreground mt-1">{selected.reportId}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><span className="text-muted-foreground">اسم العميل: </span><span className="font-medium">{selected.customer.name}</span></div>
-              <div><span className="text-muted-foreground">رقم الهاتف: </span><span className="font-medium">{selected.customer.phone}</span></div>
-              <div>
-                <span className="text-muted-foreground">نوع الحيوان: </span>
-                <span className="font-medium">{animal?.icon} {animal?.ar}{selected.customer.animalName ? ' — ' + selected.customer.animalName : ''}</span>
+        <div className="print-summary bg-white text-gray-900 mx-auto max-w-[210mm] shadow-sm print:shadow-none border border-gray-200 print:border-0" dir="rtl">
+          {/* ── Letterhead ───────────────────────────────────────────── */}
+          <div className="flex items-center justify-between px-10 py-6 border-b-[3px]" style={{ borderColor: '#3B2063' }}>
+            <div className="flex items-center gap-3">
+              <div className="relative w-8 h-8 shrink-0">
+                <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" />
               </div>
-              <div><span className="text-muted-foreground">عدد الفحوصات: </span><span className="font-medium">{selected.results.length}</span></div>
+              <div>
+                <h1 className="text-xl font-bold" style={{ color: '#3B2063' }}>مؤسسة صنف البيطرية</h1>
+                <p className="text-xs text-gray-500 tracking-wide">Sanaf Veterinary Establishment</p>
+              </div>
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#C9971F' }}>تقرير نتائج التحليل</p>
+              <p className="text-[11px] text-gray-400">Laboratory Test Report</p>
+            </div>
+          </div>
+
+          {/* ── Report meta strip ───────────────────────────────────── */}
+          <div className="flex items-center justify-between px-10 py-2.5 text-[11px]" style={{ backgroundColor: '#FBF6E8' }}>
+            <span className="font-mono text-gray-600">{selected.reportId}</span>
+            <span className="text-gray-600">
+              {reportTimestamp.toLocaleDateString('ar-SA')} — {reportTimestamp.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+
+          <div className="px-10 py-6 space-y-5">
+            {/* ── Customer info card ───────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-3 text-sm rounded-lg border border-gray-200 p-4" style={{ backgroundColor: '#FAFAFA' }}>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">العميل</span><span className="font-semibold">{selected.customer.name}</span></div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">الهاتف</span><span className="font-semibold font-mono">{selected.customer.phone}</span></div>
+              <div className="flex gap-2">
+                <span className="text-gray-400 w-20 shrink-0">الحيوان</span>
+                <span className="font-semibold">{animal?.icon} {animal?.ar}{selected.customer.animalName ? ` — ${selected.customer.animalName}` : ''}</span>
+              </div>
+              <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">عدد الفحوصات</span><span className="font-semibold">{selected.results.length}</span></div>
             </div>
 
-            <table className="w-full text-sm border-collapse mt-2">
+            {/* ── Results table ─────────────────────────────────────── */}
+            <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-muted text-xs uppercase text-muted-foreground">
-                  <th className="text-right py-2 px-3">الفحص</th>
-                  <th className="text-center py-2 px-3">النتيجة</th>
-                  <th className="text-center py-2 px-3">الوحدة</th>
-                  <th className="text-center py-2 px-3">المعدل الطبيعي</th>
-                  <th className="text-center py-2 px-3">الحالة</th>
+                <tr style={{ backgroundColor: '#3B2063' }}>
+                  <th className="text-right py-2.5 px-3 font-medium text-white text-xs rounded-tr-md">الفحص</th>
+                  <th className="text-center py-2.5 px-3 font-medium text-white text-xs">النتيجة</th>
+                  <th className="text-center py-2.5 px-3 font-medium text-white text-xs">الوحدة</th>
+                  <th className="text-center py-2.5 px-3 font-medium text-white text-xs">المعدل الطبيعي</th>
+                  <th className="text-center py-2.5 px-3 font-medium text-white text-xs rounded-tl-md">الحالة</th>
                 </tr>
               </thead>
               <tbody>
-                {selected.results.map(r => (
-                  <tr key={r.catalogId} className={`border-b ${r.critical ? 'bg-red-50' : r.status !== 'normal' && r.status !== 'unknown' ? 'bg-amber-50' : ''}`}>
-                    <td className="py-2 px-3 font-medium">{r.testNameAr}</td>
-                    <td className={`py-2 px-3 text-center font-mono font-bold ${r.critical ? 'text-red-700' : r.status !== 'normal' && r.status !== 'unknown' ? 'text-amber-700' : ''}`}>{r.value}</td>
-                    <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
-                    <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
-                    <td className="py-2 px-3 text-center text-xs">
-                      {r.status === 'unknown' && '—'}
-                      {r.status === 'normal' && <span className="text-green-700 font-medium">طبيعي</span>}
-                      {r.status === 'low' && <span className={`font-semibold ${r.critical ? 'text-red-700' : 'text-amber-700'}`}>{r.critical ? 'منخفض جداً' : 'منخفض'}</span>}
-                      {r.status === 'high' && <span className={`font-semibold ${r.critical ? 'text-red-700' : 'text-amber-700'}`}>{r.critical ? 'مرتفع جداً' : 'مرتفع'}</span>}
-                    </td>
-                  </tr>
-                ))}
+                {selected.results.map((r, i) => {
+                  const flagged = r.critical || (r.status !== 'normal' && r.status !== 'unknown')
+                  return (
+                    <tr
+                      key={r.catalogId}
+                      className="border-b border-gray-100"
+                      style={{ backgroundColor: r.critical ? '#FEF2F2' : r.status === 'low' || r.status === 'high' ? '#FFFBEB' : i % 2 === 0 ? '#FFFFFF' : '#FAFAFA' }}
+                    >
+                      <td className="py-2.5 px-3 font-medium">{r.testNameAr}</td>
+                      <td className={`py-2.5 px-3 text-center font-mono font-bold ${r.critical ? 'text-red-700' : flagged ? 'text-amber-700' : 'text-gray-800'}`}>{r.value}</td>
+                      <td className="py-2.5 px-3 text-center text-gray-500">{r.unit}</td>
+                      <td className="py-2.5 px-3 text-center text-gray-500">{r.refRange}</td>
+                      <td className="py-2.5 px-3 text-center text-xs">
+                        {r.status === 'unknown' && <span className="text-gray-400">—</span>}
+                        {r.status === 'normal' && <span className="text-green-700 font-medium">طبيعي</span>}
+                        {r.status === 'low' && <span className={`font-semibold ${r.critical ? 'text-red-700' : 'text-amber-700'}`}>{r.critical ? 'منخفض جداً' : 'منخفض'}</span>}
+                        {r.status === 'high' && <span className={`font-semibold ${r.critical ? 'text-red-700' : 'text-amber-700'}`}>{r.critical ? 'مرتفع جداً' : 'مرتفع'}</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
 
-            {selected.results.some(r => r.critical) && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                ⚠ تحتوي هذه النتائج على قيم حرجة تستوجب المراجعة الفورية
-              </div>
-            )}
-
             {selected.doctorNotes && (
-              <div className="border rounded-md p-3 bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-1">ملاحظات الطبيب</p>
-                <p className="text-sm whitespace-pre-wrap">{selected.doctorNotes}</p>
+              <div className="rounded-lg p-4 border" style={{ backgroundColor: '#FBF6E8', borderColor: '#EADFB8' }}>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: '#9C7A1A' }}>رأي الطبيب والتوصيات</p>
+                <p className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{selected.doctorNotes}</p>
               </div>
             )}
+          </div>
 
-            <div className="border-t pt-3 text-xs text-muted-foreground flex justify-between items-center">
-              <span>توقيع الطبيب: ................................</span>
-              <span className="font-mono">{selected.reportId}</span>
+          {/* ── Footer / signature ───────────────────────────────────── */}
+          <div className="flex items-end justify-between px-10 py-5 border-t" style={{ borderColor: '#E5E0D8' }}>
+            <div className="text-xs text-gray-500">
+              <p className="font-mono">{selected.reportId}</p>
+              <p className="mt-0.5">مؤسسة صنف البيطرية — تقرير سري ومخصص للاستخدام الطبي فقط</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center">
+              <p className="text-xs text-gray-400 mb-6">توقيع الطبيب المسؤول</p>
+              <div className="w-40 border-t border-gray-300" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

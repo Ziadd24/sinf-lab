@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLanguage } from '@/lib/language-context'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,16 +12,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Plus, Search, Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
-
-interface SpeciesItem { id: string; nameEn: string; nameAr: string; icon: string | null }
+import { Badge } from '@/components/ui/badge'
+import { Plus, Pencil, Trash2, FlaskConical, AlertTriangle, RefreshCw, Search } from 'lucide-react'
 
 interface TestItem {
   id: string
@@ -32,8 +22,6 @@ interface TestItem {
   testNameAr: string
   category: string | null
   categoryAr: string | null
-  speciesId: string | null
-  species: SpeciesItem | null
   minNormal: number | null
   maxNormal: number | null
   unit: string | null
@@ -42,221 +30,277 @@ interface TestItem {
   active: boolean
 }
 
+const emptyForm = {
+  testCode: '',
+  testNameEn: '',
+  testNameAr: '',
+  category: '',
+  categoryAr: '',
+  minNormal: '',
+  maxNormal: '',
+  unit: '',
+  price: '',
+  turnaround: '',
+}
+
 export function TestCatalogView() {
-  const { t } = useLanguage()
   const [tests, setTests] = useState<TestItem[]>([])
-  const [species, setSpecies] = useState<SpeciesItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('All')
-  const [speciesFilter, setSpeciesFilter] = useState('All')
   const [showDialog, setShowDialog] = useState(false)
-  const [editing, setEditing] = useState<TestItem | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
 
-  const [form, setForm] = useState({
-    testCode: '', testNameEn: '', testNameAr: '', category: '', categoryAr: '',
-    speciesId: '', minNormal: '', maxNormal: '', unit: '', price: '', turnaround: '',
-  })
-
-  const fetchData = () => {
-    Promise.all([
-      fetch('/api/tests').then(r => r.json()),
-      fetch('/api/species').then(r => r.json()),
-    ]).then(([te, s]) => { setTests(te.data || te); setSpecies(s.data || s); setLoading(false) })
-  }
-  useEffect(() => { fetchData() }, [])
-
-  const categories = [...new Set(tests.map(te => te.category).filter(Boolean))] as string[]
-
-  const filtered = tests.filter(te => {
-    if (categoryFilter !== 'All' && te.category !== categoryFilter) return false
-    if (speciesFilter !== 'All' && te.speciesId !== speciesFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return te.testCode.toLowerCase().includes(q) || te.testNameEn.toLowerCase().includes(q) || te.testNameAr.includes(q)
+  const fetchTests = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/tests?limit=200')
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      setTests(Array.isArray(json) ? json : json.data || [])
+    } catch (e: any) {
+      setError(e.message || 'فشل تحميل دليل الفحوصات')
+    } finally {
+      setLoading(false)
     }
-    return true
+  }
+
+  useEffect(() => { fetchTests() }, [])
+
+  const filtered = tests.filter(t => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      t.testNameAr.toLowerCase().includes(q) ||
+      t.testNameEn.toLowerCase().includes(q) ||
+      t.testCode.toLowerCase().includes(q)
+    )
   })
 
   const openNew = () => {
-    setEditing(null)
-    setForm({ testCode: '', testNameEn: '', testNameAr: '', category: '', categoryAr: '', speciesId: '', minNormal: '', maxNormal: '', unit: '', price: '', turnaround: '' })
+    setEditingId(null)
+    setForm(emptyForm)
     setShowDialog(true)
   }
 
-  const openEdit = (te: TestItem) => {
-    setEditing(te)
+  const openEdit = (t: TestItem) => {
+    setEditingId(t.id)
     setForm({
-      testCode: te.testCode, testNameEn: te.testNameEn, testNameAr: te.testNameAr,
-      category: te.category || '', categoryAr: te.categoryAr || '', speciesId: te.speciesId || '',
-      minNormal: te.minNormal !== null ? String(te.minNormal) : '', maxNormal: te.maxNormal !== null ? String(te.maxNormal) : '',
-      unit: te.unit || '', price: String(te.price), turnaround: te.turnaround || '',
+      testCode: t.testCode,
+      testNameEn: t.testNameEn,
+      testNameAr: t.testNameAr,
+      category: t.category || '',
+      categoryAr: t.categoryAr || '',
+      minNormal: t.minNormal?.toString() || '',
+      maxNormal: t.maxNormal?.toString() || '',
+      unit: t.unit || '',
+      price: t.price.toString(),
+      turnaround: t.turnaround || '',
     })
     setShowDialog(true)
   }
 
   const handleSave = async () => {
-    const data = {
-      testCode: form.testCode,
-      testNameEn: form.testNameEn,
-      testNameAr: form.testNameAr,
-      category: form.category || null,
-      categoryAr: form.categoryAr || null,
-      speciesId: form.speciesId || null,
-      minNormal: form.minNormal ? parseFloat(form.minNormal) : null,
-      maxNormal: form.maxNormal ? parseFloat(form.maxNormal) : null,
-      unit: form.unit || null,
-      price: parseFloat(form.price) || 0,
-      turnaround: form.turnaround || null,
-    }
+    if (!form.testCode || !form.testNameAr || !form.testNameEn || !form.price) return
+    setSaving(true)
+    try {
+      const payload = {
+        testCode: form.testCode,
+        testNameEn: form.testNameEn,
+        testNameAr: form.testNameAr,
+        category: form.category || undefined,
+        categoryAr: form.categoryAr || undefined,
+        minNormal: form.minNormal ? parseFloat(form.minNormal) : undefined,
+        maxNormal: form.maxNormal ? parseFloat(form.maxNormal) : undefined,
+        unit: form.unit || undefined,
+        price: parseFloat(form.price),
+        turnaround: form.turnaround || undefined,
+      }
 
-    if (editing) {
-      await fetch('/api/tests', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editing.id, ...data }),
-      })
-    } else {
-      await fetch('/api/tests', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, active: true }),
-      })
+      const res = editingId
+        ? await fetch('/api/tests', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingId, ...payload }),
+          })
+        : await fetch('/api/tests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+
+      if (!res.ok) {
+        const json = await res.json()
+        throw new Error(json.error || 'فشل الحفظ')
+      }
+
+      setShowDialog(false)
+      fetchTests()
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setSaving(false)
     }
-    setShowDialog(false); fetchData()
   }
 
-  const toggleActive = async (te: TestItem) => {
-    await fetch('/api/tests', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: te.id, active: !te.active }),
-    })
-    fetchData()
+  const handleDeactivate = async (t: TestItem) => {
+    if (!confirm(`إيقاف فحص "${t.testNameAr}"؟ لن يظهر بعد الآن في التقرير السريع.`)) return
+    try {
+      const res = await fetch(`/api/tests?id=${t.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('فشل الإيقاف')
+      fetchTests()
+    } catch (e: any) {
+      alert(e.message)
+    }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+        <AlertTriangle className="w-10 h-10 text-destructive opacity-60" />
+        <p className="text-sm font-medium text-destructive">{error}</p>
+        <Button variant="outline" size="sm" onClick={fetchTests} className="gap-2">
+          <RefreshCw className="w-4 h-4" /> إعادة المحاولة
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="بحث الفحوصات..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9" />
-            </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="الفئة" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">كل الفئات</SelectItem>
-                {categories.map(c => <SelectItem key={c} value={c!}>{tests.find(te => te.category === c)?.categoryAr || c!}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="النوع" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">كل الأنواع</SelectItem>
-                {species.map(s => <SelectItem key={s.id} value={s.id}>{s.icon} {s.nameAr}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button onClick={openNew} className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 ml-2" /> إضافة فحص
-            </Button>
+        <CardContent className="p-4 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="بحث في الفحوصات..." value={search} onChange={e => setSearch(e.target.value)} className="pr-9" />
           </div>
+          <Button onClick={openNew} className="gap-2">
+            <Plus className="w-4 h-4" /> فحص جديد
+          </Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardContent className="p-0">
-          <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 sticky top-0">
-                <tr>
-                  <th className="text-start p-3 font-medium text-muted-foreground">الرمز</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">الاسم</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">الفئة</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">النوع</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">النطاق المرجعي</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">الوحدة</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">السعر</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">مدة التنفيذ</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">الحالة</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(te => (
-                  <tr key={te.id} className={`border-t hover:bg-muted/30 transition-colors ${!te.active ? 'opacity-50' : ''}`}>
-                    <td className="p-3 font-mono text-xs">{te.testCode}</td>
-                    <td className="p-3">{te.testNameAr}</td>
-                    <td className="p-3 text-xs">{te.category ? (te.categoryAr || te.category) : '-'}</td>
-                    <td className="p-3 text-xs">{te.species ? `${te.species.icon} ${te.species.nameAr}` : 'عام'}</td>
-                    <td className="p-3 text-xs font-mono">
-                      {te.minNormal !== null && te.maxNormal !== null ? `${te.minNormal} - ${te.maxNormal}` : '-'}
-                    </td>
-                    <td className="p-3 text-xs">{te.unit || '-'}</td>
-                    <td className="p-3 font-mono">{te.price} ر.س</td>
-                    <td className="p-3 text-xs text-muted-foreground">{te.turnaround || '-'}</td>
-                    <td className="p-3">
-                      {te.active
-                        ? <Badge className="bg-green-100 text-green-700 border-0">نشط</Badge>
-                        : <Badge variant="secondary">غير نشط</Badge>}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(te)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => toggleActive(te)}>
-                          {te.active ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4 text-gray-400" />}
-                        </Button>
-                      </div>
-                    </td>
+        {filtered.length === 0 ? (
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <FlaskConical className="w-12 h-12 opacity-20" />
+            <p className="text-sm">{search ? 'لا توجد نتائج تطابق البحث' : 'لا توجد فحوصات بعد'}</p>
+          </CardContent>
+        ) : (
+          <CardContent className="p-0">
+            <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="text-start p-3 font-medium text-muted-foreground">الرمز</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">الاسم</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">التصنيف</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">المعدل الطبيعي</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">السعر</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+                </thead>
+                <tbody>
+                  {filtered.map(t => (
+                    <tr key={t.id} className="border-t hover:bg-muted/30 transition-colors">
+                      <td className="p-3 font-mono text-xs">{t.testCode}</td>
+                      <td className="p-3">
+                        <p className="font-medium">{t.testNameAr}</p>
+                        <p className="text-xs text-muted-foreground">{t.testNameEn}</p>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{t.categoryAr || t.category || '-'}</td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {t.minNormal !== null && t.maxNormal !== null ? `${t.minNormal} - ${t.maxNormal} ${t.unit || ''}` : '-'}
+                      </td>
+                      <td className="p-3 font-medium">{t.price} ر.س</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeactivate(t)} className="text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'تعديل الفحص' : 'إضافة فحص'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? 'تعديل فحص' : 'فحص جديد'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>رمز الفحص</Label><Input value={form.testCode} onChange={e => setForm({ ...form, testCode: e.target.value })} /></div>
-              <div><Label>السعر (ر.س)</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
+              <div>
+                <Label>الرمز *</Label>
+                <Input value={form.testCode} onChange={e => setForm({ ...form, testCode: e.target.value })} placeholder="CBC" />
+              </div>
+              <div>
+                <Label>السعر (ر.س) *</Label>
+                <Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} placeholder="80" />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>الاسم (إنجليزي)</Label><Input value={form.testNameEn} onChange={e => setForm({ ...form, testNameEn: e.target.value })} /></div>
-              <div><Label>الاسم (عربي)</Label><Input value={form.testNameAr} onChange={e => setForm({ ...form, testNameAr: e.target.value })} dir="rtl" /></div>
+              <div>
+                <Label>الاسم (عربي) *</Label>
+                <Input value={form.testNameAr} onChange={e => setForm({ ...form, testNameAr: e.target.value })} dir="rtl" />
+              </div>
+              <div>
+                <Label>الاسم (إنجليزي) *</Label>
+                <Input value={form.testNameEn} onChange={e => setForm({ ...form, testNameEn: e.target.value })} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>الفئة (إنجليزي)</Label><Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
-              <div><Label>الفئة (عربي)</Label><Input value={form.categoryAr} onChange={e => setForm({ ...form, categoryAr: e.target.value })} dir="rtl" /></div>
-            </div>
-            <div>
-              <Label>النوع</Label>
-              <Select value={form.speciesId} onValueChange={v => setForm({ ...form, speciesId: v })}>
-                <SelectTrigger><SelectValue placeholder="عام (كل الأنواع)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">عام (كل الأنواع)</SelectItem>
-                  {species.map(s => <SelectItem key={s.id} value={s.id}>{s.icon} {s.nameAr}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <div>
+                <Label>التصنيف (عربي)</Label>
+                <Input value={form.categoryAr} onChange={e => setForm({ ...form, categoryAr: e.target.value })} placeholder="أمراض الدم" dir="rtl" />
+              </div>
+              <div>
+                <Label>التصنيف (إنجليزي)</Label>
+                <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Hematology" />
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>الحد الأدنى</Label><Input type="number" step="0.1" value={form.minNormal} onChange={e => setForm({ ...form, minNormal: e.target.value })} /></div>
-              <div><Label>الحد الأقصى</Label><Input type="number" step="0.1" value={form.maxNormal} onChange={e => setForm({ ...form, maxNormal: e.target.value })} /></div>
-              <div><Label>الوحدة</Label><Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} /></div>
+              <div>
+                <Label>الحد الأدنى</Label>
+                <Input type="number" value={form.minNormal} onChange={e => setForm({ ...form, minNormal: e.target.value })} />
+              </div>
+              <div>
+                <Label>الحد الأقصى</Label>
+                <Input type="number" value={form.maxNormal} onChange={e => setForm({ ...form, maxNormal: e.target.value })} />
+              </div>
+              <div>
+                <Label>الوحدة</Label>
+                <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="g/dL" />
+              </div>
             </div>
             <div>
-              <Label>مدة التنفيذ</Label>
-              <Input value={form.turnaround} onChange={e => setForm({ ...form, turnaround: e.target.value })} placeholder="مثال: 2-4 ساعات" />
+              <Label>مدة الإنجاز</Label>
+              <Input value={form.turnaround} onChange={e => setForm({ ...form, turnaround: e.target.value })} placeholder="2-4 ساعات" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>إلغاء</Button>
-            <Button onClick={handleSave} disabled={!form.testCode || !form.testNameEn || !form.price}>{editing ? 'تحديث' : 'إنشاء'}</Button>
+            <Button onClick={handleSave} disabled={saving || !form.testCode || !form.testNameAr || !form.price}>
+              {saving ? 'جاري الحفظ...' : 'حفظ'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

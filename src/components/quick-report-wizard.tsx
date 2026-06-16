@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,11 +53,11 @@ const TEST_CATALOG: TestCatalogItem[] = [
 ]
 
 // Quick-pick bundles — common test combinations ordered together
-const BUNDLES: { id: string; nameAr: string; testIds: string[] }[] = [
-  { id: 'routine',  nameAr: 'فحص دوري شامل',      testIds: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT'] },
-  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testIds: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC'] },
-  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testIds: ['BUN', 'CREAT', 'TP'] },
-  { id: 'prepurchase', nameAr: 'فحص ما قبل الشراء', testIds: ['PREP-EQ', 'CBC', 'BIO-01'] },
+const BUNDLES: { id: string; nameAr: string; testCodes: string[] }[] = [
+  { id: 'routine',  nameAr: 'فحص دوري شامل',      testCodes: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT'] },
+  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testCodes: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC'] },
+  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testCodes: ['BUN', 'CREAT', 'TP'] },
+  { id: 'prepurchase', nameAr: 'فحص ما قبل الشراء', testCodes: ['PREP-EQ', 'CBC', 'BIO-01'] },
 ]
 
 interface ResultRow {
@@ -133,9 +134,28 @@ const generateReportId = () => {
 
 export function QuickReportWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const catalog = TEST_CATALOG
+  const [catalog, setCatalog] = useState<TestCatalogItem[]>(TEST_CATALOG)
+  const [catalogSource, setCatalogSource] = useState<'loading' | 'db' | 'fallback'>('loading')
   const [reportId] = useState(generateReportId)
   const [reportTimestamp] = useState(() => new Date())
+
+  // Load the live test catalog from the database (editable via "دليل الفحوصات").
+  // Falls back to the built-in list if the fetch fails, so the wizard keeps
+  // working even if the database is briefly unavailable.
+  useEffect(() => {
+    fetch('/api/tests?limit=200')
+      .then(r => r.json())
+      .then(json => {
+        const list = Array.isArray(json) ? json : json.data
+        if (Array.isArray(list) && list.length > 0) {
+          setCatalog(list)
+          setCatalogSource('db')
+        } else {
+          setCatalogSource('fallback')
+        }
+      })
+      .catch(() => setCatalogSource('fallback'))
+  }, [])
 
   const [data, setData] = useState<WizardData>({
     customerName: '',
@@ -239,8 +259,8 @@ export function QuickReportWizard() {
   }
 
   const applyBundle = (bundle: typeof BUNDLES[0]) => {
-    const testsToAdd = bundle.testIds
-      .map(id => catalog.find(t => t.id === id))
+    const testsToAdd = bundle.testCodes
+      .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
       .filter((t): t is TestCatalogItem => !!t && !data.selectedTestIds.includes(t.id))
     testsToAdd.forEach(test => toggleTest(test))
   }
@@ -444,12 +464,12 @@ export function QuickReportWizard() {
             {/* Quick-pick bundles */}
             <div>
               <label className="text-sm font-medium mb-2 block">باقات سريعة</label>
-              <div className="flex flex-wrap gap-2">
-                {BUNDLES.map(b => (
+                <div className="flex flex-wrap gap-2">
+                  {BUNDLES.map(b => (
                   <Button key={b.id} type="button" variant="outline" size="sm" onClick={() => applyBundle(b)} className="text-xs">
-                    {b.nameAr} ({b.testIds.length})
+                  {b.nameAr} ({b.testCodes.length})
                   </Button>
-                ))}
+                 ))}
               </div>
             </div>
 
@@ -461,6 +481,11 @@ export function QuickReportWizard() {
                   <span className="text-muted-foreground font-normal"> — تم اختيار {data.selectedTestIds.length}</span>
                 )}
               </label>
+              {catalogSource === 'fallback' && (
+                <p className="text-xs text-amber-600 mb-2">
+                  تعذر الاتصال بدليل الفحوصات المحدّث — يتم عرض القائمة الأساسية مؤقتاً
+                </p>
+              )}
 
               <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
                 {Object.entries(groupedCatalog).map(([category, tests]) => (
@@ -627,9 +652,9 @@ export function QuickReportWizard() {
             @media print {
               body * { visibility: hidden !important; }
               .print-summary, .print-summary * { visibility: visible !important; }
-              .print-summary { position: absolute; inset: 0; margin: 0; padding: 24px 32px; }
+              .print-summary { position: absolute; inset: 0; margin: 0; }
               .print\\:hidden { display: none !important; }
-              @page { margin: 1.5cm; size: A4; }
+              @page { margin: 0; size: A4; }
             }
           `}</style>
 
@@ -668,44 +693,74 @@ export function QuickReportWizard() {
             </div>
           )}
 
-          <Card className="print-summary" dir="rtl">
-            <CardContent className="pt-6 space-y-4">
-              <div className="text-center border-b pb-3">
-                <h2 className="text-lg font-bold">تقرير نتائج التحليل</h2>
-                <p className="text-sm text-muted-foreground">
-                  {reportTimestamp.toLocaleDateString('ar-SA')} — {reportTimestamp.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-                <p className="text-xs font-mono text-muted-foreground mt-1">{reportId}</p>
+          <div className="print-summary bg-white text-gray-900 mx-auto max-w-[210mm] shadow-sm print:shadow-none border border-gray-200 print:border-0" dir="rtl">
+            {/* ── Letterhead ───────────────────────────────────────────── */}
+            <div className="flex items-center justify-between px-10 py-6 border-b-[3px]" style={{ borderColor: '#3B2063' }}>
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8 shrink-0">
+                  <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold" style={{ color: '#3B2063' }}>مؤسسة صنف البيطرية</h1>
+                  <p className="text-xs text-gray-500 tracking-wide">Sanaf Veterinary Establishment</p>
+                </div>
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#C9971F' }}>تقرير نتائج التحليل</p>
+                <p className="text-[11px] text-gray-400">Laboratory Test Report</p>
+              </div>
+            </div>
+
+            {/* ── Report meta strip ───────────────────────────────────── */}
+            <div className="flex items-center justify-between px-10 py-2.5 text-[11px]" style={{ backgroundColor: '#FBF6E8' }}>
+              <span className="font-mono text-gray-600">{reportId}</span>
+              <span className="text-gray-600">
+                {reportTimestamp.toLocaleDateString('ar-SA')} — {reportTimestamp.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            <div className="px-10 py-6 space-y-5">
+              {/* ── Patient / customer info card ─────────────────────── */}
+              <div className="grid grid-cols-2 gap-3 text-sm rounded-lg border border-gray-200 p-4" style={{ backgroundColor: '#FAFAFA' }}>
+                <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">العميل</span><span className="font-semibold">{data.customerName}</span></div>
+                <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">الهاتف</span><span className="font-semibold font-mono">{data.phone}</span></div>
+                <div className="flex gap-2">
+                  <span className="text-gray-400 w-20 shrink-0">الحيوان</span>
+                  <span className="font-semibold">
+                    {ANIMALS.find(a => a.value === data.animalType)?.icon} {ANIMALS.find(a => a.value === data.animalType)?.labelAr}
+                    {data.animalName ? ` — ${data.animalName}` : ''}
+                  </span>
+                </div>
+                <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">عدد الفحوصات</span><span className="font-semibold">{data.results.filter(r => r.value).length}</span></div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-muted-foreground">اسم العميل: </span><span className="font-medium">{data.customerName}</span></div>
-                <div><span className="text-muted-foreground">رقم الهاتف: </span><span className="font-medium">{data.phone}</span></div>
-                <div><span className="text-muted-foreground">نوع الحيوان: </span><span className="font-medium">{ANIMALS.find(a => a.value === data.animalType)?.icon} {ANIMALS.find(a => a.value === data.animalType)?.labelAr}{data.animalName ? ' — ' + data.animalName : ''}</span></div>
-                <div><span className="text-muted-foreground">عدد الفحوصات: </span><span className="font-medium">{data.results.filter(r => r.value).length}</span></div>
-              </div>
-
-              <table className="w-full text-sm border-collapse mt-2">
+              {/* ── Results table ─────────────────────────────────────── */}
+              <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-muted text-xs uppercase text-muted-foreground">
-                    <th className="text-right py-2 px-3">الفحص</th>
-                    <th className="text-center py-2 px-3">النتيجة</th>
-                    <th className="text-center py-2 px-3">الوحدة</th>
-                    <th className="text-center py-2 px-3">المعدل الطبيعي</th>
-                    <th className="text-center py-2 px-3">الحالة</th>
+                  <tr style={{ backgroundColor: '#3B2063' }}>
+                    <th className="text-right py-2.5 px-3 font-medium text-white text-xs rounded-tr-md">الفحص</th>
+                    <th className="text-center py-2.5 px-3 font-medium text-white text-xs">النتيجة</th>
+                    <th className="text-center py-2.5 px-3 font-medium text-white text-xs">الوحدة</th>
+                    <th className="text-center py-2.5 px-3 font-medium text-white text-xs">المعدل الطبيعي</th>
+                    <th className="text-center py-2.5 px-3 font-medium text-white text-xs rounded-tl-md">الحالة</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.results.filter(r => r.value).map(r => {
+                  {data.results.filter(r => r.value).map((r, i) => {
                     const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
+                    const flagged = critical || (status !== 'normal' && status !== 'unknown')
                     return (
-                      <tr key={r.catalogId} className={`border-b ${critical ? 'bg-red-50' : status !== 'normal' && status !== 'unknown' ? 'bg-amber-50' : ''}`}>
-                        <td className="py-2 px-3 font-medium">{r.testNameAr}</td>
-                        <td className={`py-2 px-3 text-center font-mono font-bold ${critical ? 'text-red-700' : status !== 'normal' && status !== 'unknown' ? 'text-amber-700' : ''}`}>{r.value}</td>
-                        <td className="py-2 px-3 text-center text-muted-foreground">{r.unit}</td>
-                        <td className="py-2 px-3 text-center text-muted-foreground">{r.refRange}</td>
-                        <td className="py-2 px-3 text-center text-xs">
-                          {status === 'unknown' && '—'}
+                      <tr
+                        key={r.catalogId}
+                        className="border-b border-gray-100"
+                        style={{ backgroundColor: critical ? '#FEF2F2' : status === 'low' || status === 'high' ? '#FFFBEB' : i % 2 === 0 ? '#FFFFFF' : '#FAFAFA' }}
+                      >
+                        <td className="py-2.5 px-3 font-medium">{r.testNameAr}</td>
+                        <td className={`py-2.5 px-3 text-center font-mono font-bold ${critical ? 'text-red-700' : flagged ? 'text-amber-700' : 'text-gray-800'}`}>{r.value}</td>
+                        <td className="py-2.5 px-3 text-center text-gray-500">{r.unit}</td>
+                        <td className="py-2.5 px-3 text-center text-gray-500">{r.refRange}</td>
+                        <td className="py-2.5 px-3 text-center text-xs">
+                          {status === 'unknown' && <span className="text-gray-400">—</span>}
                           {status === 'normal' && <span className="text-green-700 font-medium">طبيعي</span>}
                           {status === 'low' && <span className={`font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>{critical ? 'منخفض جداً' : 'منخفض'}</span>}
                           {status === 'high' && <span className={`font-semibold ${critical ? 'text-red-700' : 'text-amber-700'}`}>{critical ? 'مرتفع جداً' : 'مرتفع'}</span>}
@@ -716,25 +771,26 @@ export function QuickReportWizard() {
                 </tbody>
               </table>
 
-              {data.results.some(r => evaluateResult(r.value, r.minNormal, r.maxNormal).critical) && (
-                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                  ⚠ تحتوي هذه النتائج على قيم حرجة تستوجب المراجعة الفورية
-                </div>
-              )}
-
               {data.doctorNotes && (
-                <div className="border rounded-md p-3 bg-muted/30">
-                  <p className="text-xs text-muted-foreground mb-1">ملاحظات الطبيب</p>
-                  <p className="text-sm whitespace-pre-wrap">{data.doctorNotes}</p>
+                <div className="rounded-lg p-4 border" style={{ backgroundColor: '#FBF6E8', borderColor: '#EADFB8' }}>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: '#9C7A1A' }}>رأي الطبيب والتوصيات</p>
+                  <p className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{data.doctorNotes}</p>
                 </div>
               )}
+            </div>
 
-              <div className="border-t pt-3 text-xs text-muted-foreground flex justify-between items-center">
-                <span>توقيع الطبيب: ................................</span>
-                <span className="font-mono">{reportId}</span>
+            {/* ── Footer / signature ───────────────────────────────────── */}
+            <div className="flex items-end justify-between px-10 py-5 border-t" style={{ borderColor: '#E5E0D8' }}>
+              <div className="text-xs text-gray-500">
+                <p className="font-mono">{reportId}</p>
+                <p className="mt-0.5">مؤسسة صنف البيطرية — تقرير سري ومخصص للاستخدام الطبي فقط</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-center">
+                <p className="text-xs text-gray-400 mb-6">توقيع الطبيب المسؤول</p>
+                <div className="w-40 border-t border-gray-300" />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

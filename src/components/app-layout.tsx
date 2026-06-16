@@ -6,6 +6,8 @@ import { AppSidebar, type NavItem } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard'
 import { QuickReportWizard } from '@/components/quick-report-wizard'
 import { PastReportsView } from '@/components/past-reports-view'
+import { TestCatalogView } from '@/components/test-catalog-view'
+import { BackupView } from '@/components/backup-view'
 import { Bell, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -14,6 +16,8 @@ const navTitles: Record<NavItem, string> = {
   dashboard: 'لوحة التحكم',
   'quick-report': 'تقرير سريع',
   'past-reports': 'سجل التقارير',
+  tests: 'دليل الفحوصات',
+  backup: 'النسخ الاحتياطي',
 }
 
 export function AppLayout() {
@@ -26,6 +30,8 @@ export function AppLayout() {
       case 'dashboard': return <DashboardView />
       case 'quick-report': return <QuickReportWizard />
       case 'past-reports': return <PastReportsView />
+      case 'tests': return <TestCatalogView />
+      case 'backup': return <BackupView />
     }
   }
 

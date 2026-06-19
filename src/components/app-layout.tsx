@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLanguage } from '@/lib/language-context'
 import { AppSidebar, type NavItem } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard'
@@ -8,6 +8,7 @@ import { QuickReportWizard } from '@/components/quick-report-wizard'
 import { PastReportsView } from '@/components/past-reports-view'
 import { TestCatalogView } from '@/components/test-catalog-view'
 import { BackupView } from '@/components/backup-view'
+import { InvoicesView } from '@/components/invoices-view'
 import { Bell, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -17,13 +18,26 @@ const navTitles: Record<NavItem, string> = {
   'quick-report': 'تقرير سريع',
   'past-reports': 'سجل التقارير',
   tests: 'دليل الفحوصات',
+  invoices: 'الفواتير',
   backup: 'النسخ الاحتياطي',
 }
 
 export function AppLayout() {
   const { t } = useLanguage()
-  const [activeNav, setActiveNav] = useState<NavItem>('quick-report')
+  const [activeNav, setActiveNav] = useState<NavItem>('dashboard')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  useEffect(() => {
+    const savedNav = localStorage.getItem('activeNav') as NavItem | null
+    if (savedNav && Object.keys(navTitles).includes(savedNav)) {
+      setActiveNav(savedNav)
+    }
+  }, [])
+
+  const handleNavChange = (nav: NavItem) => {
+    setActiveNav(nav)
+    localStorage.setItem('activeNav', nav)
+  }
 
   const renderContent = () => {
     switch (activeNav) {
@@ -31,6 +45,7 @@ export function AppLayout() {
       case 'quick-report': return <QuickReportWizard />
       case 'past-reports': return <PastReportsView />
       case 'tests': return <TestCatalogView />
+      case 'invoices': return <InvoicesView />
       case 'backup': return <BackupView />
     }
   }
@@ -39,7 +54,7 @@ export function AppLayout() {
     <div className="flex h-screen bg-background" dir="rtl">
       <AppSidebar
         activeNav={activeNav}
-        onNavChange={setActiveNav}
+        onNavChange={handleNavChange}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />

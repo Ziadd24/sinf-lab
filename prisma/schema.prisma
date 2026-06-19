@@ -76,6 +76,8 @@ model TestCatalog {
   species    Species?  @relation(fields: [speciesId], references: [id])
   minNormal  Float?
   maxNormal  Float?
+  minNormalOld Float?
+  maxNormalOld Float?
   unit       String?
   price      Float
   turnaround String?   // e.g., "2-4 hours"
@@ -90,8 +92,10 @@ model TestCatalog {
 model Invoice {
   id            String    @id @default(cuid()) @map("_id")
   invoiceNumber String    @unique
-  clinicId      String
-  clinic        Clinic    @relation(fields: [clinicId], references: [id])
+  clinicId      String?
+  clinic        Clinic?   @relation(fields: [clinicId], references: [id])
+  quickReportId String?   @unique
+  quickReport   QuickReport? @relation(fields: [quickReportId], references: [id])
   subTotal      Float
   vatRate       Float     @default(0.15)
   vatAmount     Float
@@ -203,6 +207,7 @@ model QuickCustomer {
   name        String
   phone       String
   animalType  String        // Camel, Sheep, Goat, Cat, Horse
+  animalAge   String?       // 'little' or 'old'
   animalName  String?       // optional pet name, for repeat-customer lookups
   reports     QuickReport[]
 
@@ -220,6 +225,7 @@ model QuickReport {
   customer    QuickCustomer @relation(fields: [customerId], references: [id])
   resultsJson String        // JSON-encoded array of { catalogId, testNameAr, testNameEn, unit, refRange, value, status }
   doctorNotes String?
+  invoice     Invoice?
   createdAt   DateTime      @default(now())
 
   @@index([customerId])

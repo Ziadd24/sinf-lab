@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,10 +59,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">SINF-VET</CardTitle>
+    <div className="flex items-center justify-center min-h-screen bg-muted/30">
+      <Card className="w-full max-w-md shadow-lg border-border">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <Image 
+              src="/logo.png" 
+              alt="SINF-VET Logo" 
+              width={160} 
+              height={160} 
+              className="object-contain" 
+              priority 
+              unoptimized
+            />
+          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight text-primary">SINF-VET</CardTitle>
           <CardDescription>
             نظام إدارة المختبر البيطري - تسجيل الدخول
           </CardDescription>
@@ -69,13 +81,13 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">
+              <label htmlFor="username" className="text-sm font-medium text-foreground">
                 اسم المستخدم
               </label>
               <Input
                 id="username"
                 type="text"
-                placeholder="drsinf"
+                placeholder="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -84,7 +96,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="password" className="text-sm font-medium text-foreground">
                 كلمة المرور
               </label>
               <Input
@@ -100,7 +112,7 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all duration-200"
               disabled={isLoading}
             >
               {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}

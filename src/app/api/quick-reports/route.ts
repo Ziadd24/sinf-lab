@@ -12,6 +12,7 @@ const resultItemSchema = z.object({
   value: z.string(),
   status: z.enum(['normal', 'low', 'high', 'unknown']),
   critical: z.boolean(),
+  price: z.number().optional(),
 })
 
 const saveReportSchema = z.object({
@@ -121,12 +122,39 @@ export async function POST(request: Request) {
       })
     }
 
+    // Generate an invoice for this report
+    const lastInvoice = await db.invoice.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { invoiceNumber: true },
+    })
+
+    const nextNum = lastInvoice
+      ? parseInt(lastInvoice.invoiceNumber.replace(/\D/g, ''), 10) + 1
+      : 1
+    const invoiceNumber = `INV-${String(nextNum).padStart(5, '0')}`
+
+    const subTotal = validated.results.reduce((sum, res: any) => sum + (parseFloat(res.price) || 0), 0)
+    const vatRate = 0.15
+    const vatAmount = subTotal * vatRate
+    const totalAmount = subTotal + vatAmount
+
     const report = await db.quickReport.create({
       data: {
         reportId: validated.reportId,
         customerId: customer.id,
         resultsJson: JSON.stringify(validated.results),
         doctorNotes: validated.doctorNotes,
+        invoice: {
+          create: {
+            invoiceNumber,
+            subTotal,
+            vatRate,
+            vatAmount,
+            totalAmount,
+            paidAmount: 0,
+            status: 'Unpaid',
+          }
+        }
       },
     })
 
@@ -137,5 +165,38 @@ export async function POST(request: Request) {
     }
     console.error('Error saving quick report:', error)
     return NextResponse.json({ error: 'فشل حفظ التقرير' }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE /api/quick-reports
+ */
+export async function DELETE(request: Request) {
+  const auth = await requireAuth(request)
+  if (!auth.authorized) return auth.response
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+    // Delete associated invoice if it exists, then the report
+    const report = await db.quickReport.findUnique({
+      where: { id },
+      include: { invoice: true }
+    })
+
+    if (!report) return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+
+    if (report.invoice) {
+      await db.invoice.delete({ where: { id: report.invoice.id } })
+    }
+
+    await db.quickReport.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting report:', error)
+    return NextResponse.json({ error: 'Failed to delete report' }, { status: 500 })
   }
 }

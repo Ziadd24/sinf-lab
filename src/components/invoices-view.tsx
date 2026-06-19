@@ -35,7 +35,8 @@ interface Invoice {
   status: string
   dueDate: string | null
   notes: string | null
-  clinic: { clinicName: string; clinicNameAr: string | null }
+  clinic: { clinicName: string; clinicNameAr: string | null } | null
+  quickReport: { customer: { name: string } } | null
   _count: { samples: number }
 }
 
@@ -72,7 +73,9 @@ export function InvoicesView() {
     if (statusFilter !== 'All' && inv.status !== statusFilter) return false
     if (search) {
       const q = search.toLowerCase()
-      return inv.invoiceNumber.toLowerCase().includes(q) || inv.clinic.clinicName.toLowerCase().includes(q)
+      const clinicMatch = inv.clinic?.clinicName.toLowerCase().includes(q) || inv.clinic?.clinicNameAr?.toLowerCase().includes(q)
+      const customerMatch = inv.quickReport?.customer.name.toLowerCase().includes(q)
+      return inv.invoiceNumber.toLowerCase().includes(q) || clinicMatch || customerMatch
     }
     return true
   })
@@ -158,7 +161,7 @@ export function InvoicesView() {
               <thead className="bg-muted/50 sticky top-0">
                 <tr>
                   <th className="text-start p-3 font-medium text-muted-foreground">رقم الفاتورة</th>
-                  <th className="text-start p-3 font-medium text-muted-foreground">العيادة</th>
+                  <th className="text-start p-3 font-medium text-muted-foreground">العميل</th>
                   <th className="text-start p-3 font-medium text-muted-foreground">المجموع الفرعي</th>
                   <th className="text-start p-3 font-medium text-muted-foreground">ضريبة</th>
                   <th className="text-start p-3 font-medium text-muted-foreground">الإجمالي</th>
@@ -174,7 +177,7 @@ export function InvoicesView() {
                   return (
                     <tr key={inv.id} className="border-t hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-mono text-xs">{inv.invoiceNumber}</td>
-                      <td className="p-3">{inv.clinic.clinicNameAr || ''}</td>
+                      <td className="p-3">{inv.clinic?.clinicNameAr || inv.clinic?.clinicName || inv.quickReport?.customer.name || ''}</td>
                       <td className="p-3 font-mono">{inv.subTotal.toLocaleString()} ر.س</td>
                       <td className="p-3 font-mono text-muted-foreground">{inv.vatAmount.toLocaleString()} ر.س</td>
                       <td className="p-3 font-mono font-medium">{inv.totalAmount.toLocaleString()} ر.س</td>
@@ -212,9 +215,9 @@ export function InvoicesView() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>العيادة</Label>
+              <Label>العميل (العيادة)</Label>
               <Select value={form.clinicId} onValueChange={v => setForm({ ...form, clinicId: v })}>
-                <SelectTrigger><SelectValue placeholder="اختر العيادة..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="اختر العميل..." /></SelectTrigger>
                 <SelectContent>
                   {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.clinicNameAr || c.clinicName}</SelectItem>)}
                 </SelectContent>
@@ -290,7 +293,7 @@ export function InvoicesView() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><p className="text-muted-foreground">رقم الفاتورة</p><p className="font-mono">{selectedInvoice.invoiceNumber}</p></div>
-                <div><p className="text-muted-foreground">العيادة</p><p>{selectedInvoice.clinic.clinicNameAr || ''}</p></div>
+                <div><p className="text-muted-foreground">العميل</p><p>{selectedInvoice.clinic?.clinicNameAr || selectedInvoice.clinic?.clinicName || selectedInvoice.quickReport?.customer.name || ''}</p></div>
                 <div><p className="text-muted-foreground">الحالة</p>
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${(statusBadge[selectedInvoice.status] || statusBadge.Unpaid).cls}`}>
                     {(statusBadge[selectedInvoice.status] || statusBadge.Unpaid).ar}

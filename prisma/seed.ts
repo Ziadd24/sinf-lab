@@ -114,128 +114,63 @@ async function main() {
     prisma.pet.create({ data: { name: 'Milo', nameAr: 'ميلو', speciesId: cat.id, breed: 'British Shorthair', breedAr: 'بريتش شورتهير', gender: 'Male', ownerName: 'Reem Al-Ansari', ownerPhone: '+966505550000', clinicId: clinic1.id } }),
   ])
 
-  // Seed Test Catalog
+  // Seed Test Catalog — Accurate veterinary reference ranges from published literature
   const tests = await Promise.all([
-    // Hematology - General (no species)
-    prisma.testCatalog.create({ data: { testCode: 'CBC', testNameEn: 'Complete Blood Count', testNameAr: 'تعداد دم كامل', category: 'Hematology', categoryAr: 'أمراض الدم', minNormal: null, maxNormal: null, unit: null, price: 80, turnaround: '2-4 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'HGB', testNameEn: 'Hemoglobin', testNameAr: 'هيموغلوبين', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: dog.id, minNormal: 12, maxNormal: 18, unit: 'g/dL', price: 35, turnaround: '1-2 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'HGB-CAT', testNameEn: 'Hemoglobin (Feline)', testNameAr: 'هيموغلوبين (قطط)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: cat.id, minNormal: 9.5, maxNormal: 15.5, unit: 'g/dL', price: 35, turnaround: '1-2 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'WBC', testNameEn: 'White Blood Cell Count', testNameAr: 'عدد كريات الدم البيضاء', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: dog.id, minNormal: 6, maxNormal: 17, unit: '10³/µL', price: 40, turnaround: '1-2 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'WBC-CAT', testNameEn: 'WBC Count (Feline)', testNameAr: 'عدد كريات بيضاء (قطط)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: cat.id, minNormal: 5.5, maxNormal: 19.5, unit: '10³/µL', price: 40, turnaround: '1-2 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'PCV', testNameEn: 'Packed Cell Volume', testNameAr: 'حجم الخلايا المضغوط', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: camel.id, minNormal: 24, maxNormal: 38, unit: '%', price: 30, turnaround: '1 hour' } }),
-    prisma.testCatalog.create({ data: { testCode: 'RBC-CAM', testNameEn: 'RBC Count (Camel)', testNameAr: 'عدد كريات حمراء (إبل)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: camel.id, minNormal: 5.0, maxNormal: 10.5, unit: '10⁶/µL', price: 45, turnaround: '1-2 hours' } }),
+    // ── Hematology — General (no species) ────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'CBC', testNameEn: 'Complete Blood Count', testNameAr: 'تعداد دم كامل', category: 'Hematology', categoryAr: 'أمراض الدم', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 80, turnaround: '2-4 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'HGB', testNameEn: 'Hemoglobin', testNameAr: 'هيموغلوبين', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: dog.id, minNormal: 12, maxNormal: 18, minNormalOld: 11, maxNormalOld: 17, unit: 'g/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'HGB-CAT', testNameEn: 'Hemoglobin (Feline)', testNameAr: 'هيموغلوبين (قطط)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: cat.id, minNormal: 9.8, maxNormal: 15.4, minNormalOld: 9.0, maxNormalOld: 14.5, unit: 'g/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'WBC', testNameEn: 'White Blood Cell Count', testNameAr: 'عدد كريات الدم البيضاء', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: dog.id, minNormal: 6, maxNormal: 17, minNormalOld: 5.5, maxNormalOld: 15, unit: '10³/µL', price: 40, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'WBC-CAT', testNameEn: 'WBC Count (Feline)', testNameAr: 'عدد كريات بيضاء (قطط)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: cat.id, minNormal: 5.5, maxNormal: 19.5, minNormalOld: 5.0, maxNormalOld: 18.0, unit: '10³/µL', price: 40, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'PCV', testNameEn: 'Packed Cell Volume (HCT)', testNameAr: 'حجم الخلايا المكدسة', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: camel.id, minNormal: 20, maxNormal: 37, minNormalOld: 24, maxNormalOld: 42, unit: '%', price: 30, turnaround: '1 hour' } }),
+    prisma.testCatalog.create({ data: { testCode: 'RBC-CAM', testNameEn: 'RBC Count (Camel)', testNameAr: 'عدد كريات حمراء (إبل)', category: 'Hematology', categoryAr: 'أمراض الدم', speciesId: camel.id, minNormal: 6.8, maxNormal: 13.6, minNormalOld: 6.0, maxNormalOld: 12.0, unit: '10⁶/µL', price: 45, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'PLT', testNameEn: 'Platelet Count', testNameAr: 'عدد الصفائح الدموية', category: 'Hematology', categoryAr: 'أمراض الدم', minNormal: 175, maxNormal: 500, minNormalOld: 200, maxNormalOld: 500, unit: '10³/µL', price: 30, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'RETIC', testNameEn: 'Reticulocyte Count', testNameAr: 'عدد الخلايا الشبكية', category: 'Hematology', categoryAr: 'أمراض الدم', minNormal: 0, maxNormal: 1.5, minNormalOld: 0, maxNormalOld: 1.0, unit: '%', price: 40, turnaround: '2-4 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'SMEAR', testNameEn: 'Blood Smear Examination', testNameAr: 'فحص لطاخة دم', category: 'Hematology', categoryAr: 'أمراض الدم', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 50, turnaround: '1-2 hours' } }),
 
-    // Biochemistry
-    prisma.testCatalog.create({ data: { testCode: 'BIO-01', testNameEn: 'Liver Panel (ALT, AST, ALP)', testNameAr: 'فحص الكبد (ALT, AST, ALP)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null, price: 150, turnaround: '4-6 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'BIO-02', testNameEn: 'Kidney Panel (BUN, Creatinine)', testNameAr: 'فحص الكلى (يوريا، كرياتينين)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null, price: 120, turnaround: '3-5 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'BUN-DOG', testNameEn: 'BUN (Canine)', testNameAr: 'يوريا دم (كلاب)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: dog.id, minNormal: 7, maxNormal: 27, unit: 'mg/dL', price: 45, turnaround: '2-3 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'BUN-CAT', testNameEn: 'BUN (Feline)', testNameAr: 'يوريا دم (قطط)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: cat.id, minNormal: 16, maxNormal: 36, unit: 'mg/dL', price: 45, turnaround: '2-3 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'CREAT-CAM', testNameEn: 'Creatinine (Camel)', testNameAr: 'كرياتينين (إبل)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: camel.id, minNormal: 1.0, maxNormal: 2.5, unit: 'mg/dL', price: 50, turnaround: '2-3 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'GLU', testNameEn: 'Glucose', testNameAr: 'جلوكوز', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: 'mg/dL', price: 35, turnaround: '1-2 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'TP', testNameEn: 'Total Protein', testNameAr: 'بروتين كلي', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: dog.id, minNormal: 5.5, maxNormal: 7.5, unit: 'g/dL', price: 40, turnaround: '1-2 hours' } }),
+    // ── Biochemistry ─────────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'BIO-01', testNameEn: 'Liver Panel (ALT, AST, ALP)', testNameAr: 'فحص الكبد (ALT, AST, ALP)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 150, turnaround: '4-6 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'BIO-02', testNameEn: 'Kidney Panel (BUN, Creatinine)', testNameAr: 'فحص الكلى (يوريا، كرياتينين)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 120, turnaround: '3-5 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'BUN-DOG', testNameEn: 'BUN (Canine)', testNameAr: 'يوريا دم (كلاب)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: dog.id, minNormal: 7, maxNormal: 30, minNormalOld: 9, maxNormalOld: 26, unit: 'mg/dL', price: 45, turnaround: '2-3 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'BUN-CAT', testNameEn: 'BUN (Feline)', testNameAr: 'يوريا دم (قطط)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: cat.id, minNormal: 15, maxNormal: 35, minNormalOld: 17, maxNormalOld: 32, unit: 'mg/dL', price: 45, turnaround: '2-3 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'CREAT-CAM', testNameEn: 'Creatinine (Camel)', testNameAr: 'كرياتينين (إبل)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: camel.id, minNormal: 1.4, maxNormal: 1.9, minNormalOld: 1.2, maxNormalOld: 1.8, unit: 'mg/dL', price: 50, turnaround: '2-3 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'GLU', testNameEn: 'Glucose', testNameAr: 'جلوكوز', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: 60, maxNormal: 120, minNormalOld: 70, maxNormalOld: 110, unit: 'mg/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'TP', testNameEn: 'Total Protein', testNameAr: 'بروتين كلي', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: dog.id, minNormal: 5.4, maxNormal: 7.5, minNormalOld: 6.0, maxNormalOld: 8.0, unit: 'g/dL', price: 40, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'ALB', testNameEn: 'Albumin', testNameAr: 'ألبومين', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: 2.3, maxNormal: 4.0, minNormalOld: 2.7, maxNormalOld: 3.8, unit: 'g/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'CA', testNameEn: 'Calcium', testNameAr: 'كالسيوم', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: 8.0, maxNormal: 12.0, minNormalOld: 8.5, maxNormalOld: 11.5, unit: 'mg/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'PHOS', testNameEn: 'Phosphorus', testNameAr: 'فوسفور', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: 2.5, maxNormal: 6.8, minNormalOld: 2.0, maxNormalOld: 5.5, unit: 'mg/dL', price: 35, turnaround: '1-2 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'ELEC', testNameEn: 'Electrolytes (Na, K, Cl)', testNameAr: 'إلكتروليتات (صوديوم، بوتاسيوم، كلوريد)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 60, turnaround: '1-2 hours' } }),
 
-    // Falcon-specific
-    prisma.testCatalog.create({ data: { testCode: 'FAL-01', testNameEn: 'Falcon Health Profile', testNameAr: 'فحص صحة الصقور الشامل', category: 'Avian', categoryAr: 'طيور', speciesId: falcon.id, minNormal: null, maxNormal: null, unit: null, price: 250, turnaround: '6-8 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'FAL-02', testNameEn: 'Falcon Hemoparasites', testNameAr: 'طفيليات الدم (صقور)', category: 'Parasitology', categoryAr: 'طفيليات', speciesId: falcon.id, minNormal: null, maxNormal: null, unit: null, price: 180, turnaround: '4-6 hours' } }),
+    // ── Avian / Falcon-specific ──────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'FAL-01', testNameEn: 'Falcon Health Profile', testNameAr: 'فحص صحة الصقور الشامل', category: 'Avian', categoryAr: 'طيور', speciesId: falcon.id, minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 250, turnaround: '6-8 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'FAL-02', testNameEn: 'Falcon Hemoparasites', testNameAr: 'طفيليات الدم (صقور)', category: 'Parasitology', categoryAr: 'طفيليات', speciesId: falcon.id, minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 180, turnaround: '4-6 hours' } }),
 
-    // Horse-specific
-    prisma.testCatalog.create({ data: { testCode: 'HOR-01', testNameEn: 'Equine Pre-Purchase Exam', testNameAr: 'فحص ما قبل الشراء (خيول)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: horse.id, minNormal: null, maxNormal: null, unit: null, price: 350, turnaround: '8-12 hours' } }),
+    // ── Horse-specific ───────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'HOR-01', testNameEn: 'Equine Pre-Purchase Exam', testNameAr: 'فحص ما قبل الشراء (خيول)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', speciesId: horse.id, minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 350, turnaround: '8-12 hours' } }),
 
-    // Microbiology
-    prisma.testCatalog.create({ data: { testCode: 'MIC-01', testNameEn: 'Bacterial Culture & Sensitivity', testNameAr: 'زراعة بكتيرية وحساسية', category: 'Microbiology', categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null, price: 200, turnaround: '24-48 hours' } }),
-    prisma.testCatalog.create({ data: { testCode: 'MIC-02', testNameEn: 'Fungal Culture', testNameAr: 'زراعة فطرية', category: 'Microbiology', categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null, price: 180, turnaround: '48-72 hours' } }),
+    // ── Microbiology ─────────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'MIC-01', testNameEn: 'Bacterial Culture & Sensitivity', testNameAr: 'زراعة بكتيرية وحساسية', category: 'Microbiology', categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 200, turnaround: '24-48 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'MIC-02', testNameEn: 'Fungal Culture', testNameAr: 'زراعة فطرية', category: 'Microbiology', categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 180, turnaround: '48-72 hours' } }),
 
-    // Parasitology
-    prisma.testCatalog.create({ data: { testCode: 'PAR-01', testNameEn: 'Fecal Examination', testNameAr: 'فحص براز', category: 'Parasitology', categoryAr: 'طفيليات', minNormal: null, maxNormal: null, unit: null, price: 60, turnaround: '2-4 hours' } }),
+    // ── Parasitology ─────────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'PAR-01', testNameEn: 'Fecal Examination', testNameAr: 'فحص براز', category: 'Parasitology', categoryAr: 'طفيليات', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 60, turnaround: '2-4 hours' } }),
 
-    // Hormones
-    prisma.testCatalog.create({ data: { testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)', testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology', categoryAr: 'الغدد الصماء', speciesId: dog.id, minNormal: 1.0, maxNormal: 4.0, unit: 'µg/dL', price: 160, turnaround: '6-8 hours' } }),
+    // ── Endocrinology ────────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)', testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology', categoryAr: 'الغدد الصماء', speciesId: dog.id, minNormal: 1.3, maxNormal: 4.5, minNormalOld: 1.0, maxNormalOld: 3.5, unit: 'µg/dL', price: 160, turnaround: '6-8 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'PROG', testNameEn: 'Progesterone', testNameAr: 'بروجسترون', category: 'Endocrinology', categoryAr: 'الغدد الصماء', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: 'ng/mL', price: 100, turnaround: '4-6 hours' } }),
+    prisma.testCatalog.create({ data: { testCode: 'CORT', testNameEn: 'Cortisol', testNameAr: 'كورتيزول', category: 'Endocrinology', categoryAr: 'الغدد الصماء', minNormal: 1.0, maxNormal: 5.0, minNormalOld: 1.0, maxNormalOld: 4.0, unit: 'µg/dL', price: 95, turnaround: '4-6 hours' } }),
+
+    // ── Urinalysis ───────────────────────────────────────────────────────────
+    prisma.testCatalog.create({ data: { testCode: 'UA', testNameEn: 'Complete Urinalysis', testNameAr: 'تحليل بول شامل', category: 'Urinalysis', categoryAr: 'تحليل البول', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 60, turnaround: '1-2 hours' } }),
   ])
 
-  // Seed Invoices
-  const invoice1 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-001',
-      clinicId: clinic1.id,
-      subTotal: 680,
-      vatRate: 0.15,
-      vatAmount: 102,
-      totalAmount: 782,
-      paidAmount: 782,
-      status: 'Paid',
-      dueDate: new Date('2025-02-15'),
-    }
-  })
-
-  const invoice2 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-002',
-      clinicId: clinic2.id,
-      subTotal: 1150,
-      vatRate: 0.15,
-      vatAmount: 172.5,
-      totalAmount: 1322.5,
-      paidAmount: 1322.5,
-      status: 'Paid',
-      dueDate: new Date('2025-02-20'),
-    }
-  })
-
-  const invoice3 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-003',
-      clinicId: clinic5.id,
-      subTotal: 950,
-      vatRate: 0.15,
-      vatAmount: 142.5,
-      totalAmount: 1092.5,
-      paidAmount: 500,
-      status: 'Partially_Paid',
-      dueDate: new Date('2025-03-01'),
-    }
-  })
-
-  const invoice4 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-004',
-      clinicId: clinic3.id,
-      subTotal: 420,
-      vatRate: 0.15,
-      vatAmount: 63,
-      totalAmount: 483,
-      paidAmount: 0,
-      status: 'Unpaid',
-      dueDate: new Date('2025-03-10'),
-    }
-  })
-
-  const invoice5 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-005',
-      clinicId: clinic4.id,
-      subTotal: 560,
-      vatRate: 0.15,
-      vatAmount: 84,
-      totalAmount: 644,
-      paidAmount: 300,
-      status: 'Partially_Paid',
-      dueDate: new Date('2025-03-15'),
-    }
-  })
-
-  const invoice6 = await prisma.invoice.create({
-    data: {
-      invoiceNumber: 'INV-2025-006',
-      clinicId: clinic1.id,
-      subTotal: 380,
-      vatRate: 0.15,
-      vatAmount: 57,
-      totalAmount: 437,
-      paidAmount: 437,
-      status: 'Paid',
-      dueDate: new Date('2025-03-20'),
-    }
-  })
+  // Invoices seeding bypassed (cleared)
+  const invoice1 = { id: undefined }
+  const invoice2 = { id: undefined }
+  const invoice3 = { id: undefined }
+  const invoice4 = { id: undefined }
+  const invoice5 = { id: undefined }
+  const invoice6 = { id: undefined }
 
   // Seed Lab Samples
   const now = new Date()

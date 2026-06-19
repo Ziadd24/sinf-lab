@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       totalTests,
       recentReports,
       allReports,
+      allInvoices,
     ] = await Promise.all([
       db.quickReport.count(),
       db.quickReport.count({ where: { createdAt: { gte: startOfToday } } }),
@@ -36,6 +37,9 @@ export async function GET(request: Request) {
       }),
       db.quickReport.findMany({
         select: { resultsJson: true, createdAt: true },
+      }),
+      db.invoice.findMany({
+        select: { paidAmount: true, createdAt: true },
       }),
     ])
 
@@ -62,20 +66,25 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => b.count - a.count)
 
-    // Revenue this month (sum prices of all results in reports this month)
-    let revenueThisMonth = 0
-    let totalRevenue = 0
+    // Panic count from all reports
     let panicCount = 0
-
     for (const r of allReports) {
       try {
         const results = JSON.parse(r.resultsJson)
-        const thisMonth = r.createdAt >= startOfMonth
-
         for (const res of results) {
           if (res.critical) panicCount++
         }
       } catch {}
+    }
+
+    // Revenue from paid invoices
+    let revenueThisMonth = 0
+    let totalRevenue = 0
+    for (const inv of allInvoices) {
+      totalRevenue += inv.paidAmount || 0
+      if (inv.createdAt >= startOfMonth) {
+        revenueThisMonth += inv.paidAmount || 0
+      }
     }
 
     // Monthly report volume (last 6 months)
@@ -100,16 +109,33 @@ export async function GET(request: Request) {
       totalCustomers,
       totalTests,
       panicCount,
+      totalRevenue,
+      revenueThisMonth,
       animalBreakdown,
       monthlyData,
-      recentReports: recentReports.map(r => ({
-        id: r.id,
-        reportId: r.reportId,
-        createdAt: r.createdAt,
-        customer: r.customer,
-        resultsCount: (() => { try { return JSON.parse(r.resultsJson).length } catch { return 0 } })(),
-        hasPanic: (() => { try { return JSON.parse(r.resultsJson).some((x: any) => x.critical) } catch { return false } })(),
-      })),
+      recentReports: recentReports.map(r => {
+        let resultsCount = 0
+        let hasPanic = false
+        let reportTotal = 0
+        try {
+          const parsed = JSON.parse(r.resultsJson)
+          resultsCount = parsed.length
+          hasPanic = parsed.some((x: any) => x.critical)
+          reportTotal = parsed.reduce((sum: number, x: any) => {
+            const p = typeof x.price === 'number' ? x.price : parseFloat(x.price) || 0
+            return sum + p
+          }, 0)
+        } catch {}
+        return {
+          id: r.id,
+          reportId: r.reportId,
+          createdAt: r.createdAt,
+          customer: r.customer,
+          resultsCount,
+          hasPanic,
+          reportTotal,
+        }
+      }),
     })
   } catch (error) {
     console.error('Error fetching dashboard:', error)

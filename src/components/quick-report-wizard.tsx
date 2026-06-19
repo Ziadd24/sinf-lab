@@ -29,35 +29,57 @@ interface TestCatalogItem {
   categoryAr: string | null
   minNormal: number | null
   maxNormal: number | null
+  minNormalOld?: number | null
+  maxNormalOld?: number | null
   unit: string | null
   price: number
+  species?: { id: string; nameEn: string; nameAr: string } | null
+  speciesId?: string | null
 }
 
 // Static test catalog — no database needed for Step 1
 const TEST_CATALOG: TestCatalogItem[] = [
-  { id: 'CBC',     testCode: 'CBC',     testNameEn: 'Complete Blood Count',          testNameAr: 'تعداد دم كامل',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null, maxNormal: null, unit: null,     price: 80 },
-  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9,    maxNormal: 18,   unit: 'g/dL',   price: 35 },
-  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,  maxNormal: 19.5, unit: '10³/µL', price: 40 },
-  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume',             testNameAr: 'حجم الخلايا المضغوط',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 24,   maxNormal: 38,   unit: '%',      price: 30 },
-  { id: 'RBC',     testCode: 'RBC',     testNameEn: 'RBC Count',                      testNameAr: 'عدد كريات الدم الحمراء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.0,  maxNormal: 10.5, unit: '10⁶/µL', price: 35 },
-  { id: 'BIO-01',  testCode: 'BIO-01',  testNameEn: 'Liver Panel (ALT, AST, ALP)',    testNameAr: 'فحص الكبد (ALT, AST, ALP)',  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null,     price: 120 },
-  { id: 'BUN',     testCode: 'BUN',     testNameEn: 'BUN (Urea)',                     testNameAr: 'يوريا الدم',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 7,    maxNormal: 36,   unit: 'mg/dL',  price: 45 },
-  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 1.0,  maxNormal: 2.5,  unit: 'mg/dL',  price: 45 },
-  { id: 'GLU',     testCode: 'GLU',     testNameEn: 'Glucose',                        testNameAr: 'جلوكوز',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 60,   maxNormal: 120,  unit: 'mg/dL',  price: 30 },
-  { id: 'TP',      testCode: 'TP',      testNameEn: 'Total Protein',                  testNameAr: 'بروتين كلي',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 5.5,  maxNormal: 7.5,  unit: 'g/dL',   price: 35 },
-  { id: 'MIC-01',  testCode: 'MIC-01',  testNameEn: 'Bacterial Culture & Sensitivity',testNameAr: 'زراعة بكتيرية وحساسية',     category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null,     price: 150 },
-  { id: 'MIC-02',  testCode: 'MIC-02',  testNameEn: 'Fungal Culture',                 testNameAr: 'زراعة فطرية',                category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null, maxNormal: null, unit: null,     price: 130 },
-  { id: 'PAR-01',  testCode: 'PAR-01',  testNameEn: 'Fecal Examination',              testNameAr: 'فحص براز',                   category: 'Parasitology',   categoryAr: 'طفيليات',         minNormal: null, maxNormal: null, unit: null,     price: 50 },
-  { id: 'HORM-01', testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)',         testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,  maxNormal: 4.0,  unit: 'µg/dL',  price: 90 },
-  { id: 'PREP-EQ', testCode: 'PREP-EQ', testNameEn: 'Pre-Purchase Exam (Equine)',     testNameAr: 'فحص ما قبل الشراء (خيول)',   category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, unit: null,     price: 200 },
+  // ── Hematology ────────────────────────────────────────────────────────────
+  { id: 'CBC',     testCode: 'CBC',     testNameEn: 'Complete Blood Count',          testNameAr: 'تعداد دم كامل',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 80 },
+  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9.8,   maxNormal: 15.4,  minNormalOld: 11.0,  maxNormalOld: 17.0,  unit: 'g/dL',   price: 35 },
+  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,   maxNormal: 19.5,  minNormalOld: 6.0,   maxNormalOld: 17.0,  unit: '10³/µL', price: 40 },
+  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume (HCT)',       testNameAr: 'حجم الخلايا المكدسة',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 27,    maxNormal: 45,    minNormalOld: 32,    maxNormalOld: 52,    unit: '%',      price: 30 },
+  { id: 'RBC',     testCode: 'RBC',     testNameEn: 'RBC Count',                      testNameAr: 'عدد كريات الدم الحمراء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.0,   maxNormal: 10.0,  minNormalOld: 5.5,   maxNormalOld: 8.5,   unit: '10⁶/µL', price: 35 },
+  { id: 'PLT',     testCode: 'PLT',     testNameEn: 'Platelet Count',                 testNameAr: 'عدد الصفائح الدموية',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 175,   maxNormal: 500,   minNormalOld: 200,   maxNormalOld: 500,   unit: '10³/µL', price: 30 },
+  { id: 'RETIC',   testCode: 'RETIC',   testNameEn: 'Reticulocyte Count',             testNameAr: 'عدد الخلايا الشبكية',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 0,     maxNormal: 1.5,   minNormalOld: 0,     maxNormalOld: 1.0,   unit: '%',      price: 40 },
+  { id: 'SMEAR',   testCode: 'SMEAR',   testNameEn: 'Blood Smear Examination',        testNameAr: 'فحص لطاخة دم',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 50 },
+  // ── Biochemistry ──────────────────────────────────────────────────────────
+  { id: 'BIO-01',  testCode: 'BIO-01',  testNameEn: 'Liver Panel (ALT, AST, ALP)',    testNameAr: 'فحص الكبد (ALT, AST, ALP)',  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 120 },
+  { id: 'BUN',     testCode: 'BUN',     testNameEn: 'BUN (Urea)',                     testNameAr: 'يوريا الدم',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 7,     maxNormal: 27,    minNormalOld: 10,    maxNormalOld: 30,    unit: 'mg/dL',  price: 45 },
+  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 0.5,   maxNormal: 2.2,   minNormalOld: 0.8,   maxNormalOld: 1.8,   unit: 'mg/dL',  price: 45 },
+  { id: 'GLU',     testCode: 'GLU',     testNameEn: 'Glucose',                        testNameAr: 'جلوكوز',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 60,    maxNormal: 120,   minNormalOld: 70,    maxNormalOld: 110,   unit: 'mg/dL',  price: 30 },
+  { id: 'TP',      testCode: 'TP',      testNameEn: 'Total Protein',                  testNameAr: 'بروتين كلي',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 5.4,   maxNormal: 8.8,   minNormalOld: 6.0,   maxNormalOld: 8.0,   unit: 'g/dL',   price: 35 },
+  { id: 'ALB',     testCode: 'ALB',     testNameEn: 'Albumin',                        testNameAr: 'ألبومين',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 2.3,   maxNormal: 4.0,   minNormalOld: 2.7,   maxNormalOld: 3.8,   unit: 'g/dL',   price: 35 },
+  { id: 'CA',      testCode: 'CA',      testNameEn: 'Calcium',                        testNameAr: 'كالسيوم',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 8.0,   maxNormal: 12.0,  minNormalOld: 8.5,   maxNormalOld: 11.5,  unit: 'mg/dL',  price: 35 },
+  { id: 'PHOS',    testCode: 'PHOS',    testNameEn: 'Phosphorus',                     testNameAr: 'فوسفور',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 2.5,   maxNormal: 6.8,   minNormalOld: 2.0,   maxNormalOld: 5.5,   unit: 'mg/dL',  price: 35 },
+  { id: 'ELEC',    testCode: 'ELEC',    testNameEn: 'Electrolytes (Na, K, Cl)',       testNameAr: 'إلكتروليتات (صوديوم، بوتاسيوم، كلوريد)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 60 },
+  // ── Microbiology ──────────────────────────────────────────────────────────
+  { id: 'MIC-01',  testCode: 'MIC-01',  testNameEn: 'Bacterial Culture & Sensitivity',testNameAr: 'زراعة بكتيرية وحساسية',     category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 150 },
+  { id: 'MIC-02',  testCode: 'MIC-02',  testNameEn: 'Fungal Culture',                 testNameAr: 'زراعة فطرية',                category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 130 },
+  // ── Parasitology ──────────────────────────────────────────────────────────
+  { id: 'PAR-01',  testCode: 'PAR-01',  testNameEn: 'Fecal Examination',              testNameAr: 'فحص براز',                   category: 'Parasitology',   categoryAr: 'طفيليات',         minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 50 },
+  // ── Endocrinology ─────────────────────────────────────────────────────────
+  { id: 'HORM-01', testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)',         testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,   maxNormal: 4.0,   minNormalOld: 0.8,   maxNormalOld: 3.5,   unit: 'µg/dL',  price: 90 },
+  { id: 'PROG',    testCode: 'PROG',    testNameEn: 'Progesterone',                   testNameAr: 'بروجسترون',                  category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: 'ng/mL',  price: 100 },
+  { id: 'CORT',    testCode: 'CORT',    testNameEn: 'Cortisol',                       testNameAr: 'كورتيزول',                   category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,   maxNormal: 5.0,   minNormalOld: 1.0,   maxNormalOld: 4.0,   unit: 'µg/dL',  price: 95 },
+  // ── Urinalysis ────────────────────────────────────────────────────────────
+  { id: 'UA',      testCode: 'UA',      testNameEn: 'Complete Urinalysis',            testNameAr: 'تحليل بول شامل',             category: 'Urinalysis',     categoryAr: 'تحليل البول',     minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 60 },
+  // ── Special ───────────────────────────────────────────────────────────────
+  { id: 'PREP-EQ', testCode: 'PREP-EQ', testNameEn: 'Pre-Purchase Exam (Equine)',     testNameAr: 'فحص ما قبل الشراء (خيول)',   category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 200 },
 ]
 
 // Quick-pick bundles — common test combinations ordered together
 const BUNDLES: { id: string; nameAr: string; testCodes: string[] }[] = [
-  { id: 'routine',  nameAr: 'فحص دوري شامل',      testCodes: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT'] },
-  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testCodes: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC'] },
-  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testCodes: ['BUN', 'CREAT', 'TP'] },
+  { id: 'routine',  nameAr: 'فحص دوري شامل',      testCodes: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT', 'UA'] },
+  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testCodes: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC', 'PLT'] },
+  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testCodes: ['BUN', 'CREAT', 'TP', 'ALB', 'ELEC'] },
   { id: 'prepurchase', nameAr: 'فحص ما قبل الشراء', testCodes: ['PREP-EQ', 'CBC', 'BIO-01'] },
+  { id: 'general',  nameAr: 'فحص عام شامل',        testCodes: ['CBC', 'BIO-01', 'BUN', 'CREAT', 'GLU', 'TP', 'ALB', 'UA'] },
 ]
 
 interface ResultRow {
@@ -77,6 +99,7 @@ interface CustomerMatch {
   name: string
   phone: string
   animalType: string
+  animalAge?: string | null
   animalName: string | null
   lastReportAt: string | null
 }
@@ -91,14 +114,19 @@ interface WizardData {
   customerName: string
   phone: string
   animalType: string
+  animalAge: string
   animalName: string
   selectedTestIds: string[]
   results: ResultRow[]
   doctorNotes: string
 }
 
-const refRangeOf = (t: TestCatalogItem) =>
-  t.minNormal !== null && t.maxNormal !== null ? `${t.minNormal} – ${t.maxNormal}` : '—'
+const refRangeOf = (t: TestCatalogItem, age: string) => {
+  if (age === 'old' && t.minNormalOld !== null && t.maxNormalOld !== null && t.minNormalOld !== undefined && t.maxNormalOld !== undefined) {
+    return `${t.minNormalOld} – ${t.maxNormalOld}`
+  }
+  return t.minNormal !== null && t.maxNormal !== null ? `${t.minNormal} – ${t.maxNormal}` : '—'
+}
 
 type ResultStatus = 'normal' | 'low' | 'high' | 'unknown'
 
@@ -161,6 +189,7 @@ export function QuickReportWizard() {
     customerName: '',
     phone: '',
     animalType: '',
+    animalAge: 'little',
     animalName: '',
     selectedTestIds: [],
     results: [],
@@ -199,6 +228,7 @@ export function QuickReportWizard() {
     update('customerName', c.name)
     update('phone', c.phone)
     update('animalType', c.animalType)
+    update('animalAge', c.animalAge || 'little')
     update('animalName', c.animalName || '')
     setShowMatches(false)
   }
@@ -227,6 +257,27 @@ export function QuickReportWizard() {
   const update = <K extends keyof WizardData>(key: K, value: WizardData[K]) =>
     setData(prev => ({ ...prev, [key]: value }))
 
+  useEffect(() => {
+    setData(prev => {
+      if (prev.results.length === 0) return prev;
+      return {
+        ...prev,
+        results: prev.results.map(r => {
+          const test = catalog.find(t => t.id === r.catalogId)
+          if (!test) return r
+          const minNormal = prev.animalAge === 'old' && test.minNormalOld !== undefined && test.minNormalOld !== null ? test.minNormalOld : test.minNormal
+          const maxNormal = prev.animalAge === 'old' && test.maxNormalOld !== undefined && test.maxNormalOld !== null ? test.maxNormalOld : test.maxNormal
+          return {
+            ...r,
+            refRange: refRangeOf(test, prev.animalAge),
+            minNormal,
+            maxNormal,
+          }
+        })
+      }
+    })
+  }, [data.animalAge, catalog])
+
   const toggleTest = (test: TestCatalogItem) => {
     setData(prev => {
       const isSelected = prev.selectedTestIds.includes(test.id)
@@ -247,9 +298,9 @@ export function QuickReportWizard() {
             testNameAr: test.testNameAr,
             testNameEn: test.testNameEn,
             unit: test.unit || '—',
-            refRange: refRangeOf(test),
-            minNormal: test.minNormal,
-            maxNormal: test.maxNormal,
+            refRange: refRangeOf(test, prev.animalAge),
+            minNormal: prev.animalAge === 'old' && test.minNormalOld !== undefined && test.minNormalOld !== null ? test.minNormalOld : test.minNormal,
+            maxNormal: prev.animalAge === 'old' && test.maxNormalOld !== undefined && test.maxNormalOld !== null ? test.maxNormalOld : test.maxNormal,
             price: test.price,
             value: '',
           },
@@ -292,8 +343,28 @@ export function QuickReportWizard() {
       results: prev.results.map(r => (r.catalogId === catalogId ? { ...r, value } : r)),
     }))
 
+  // Filter catalog based on selected species (animalType)
+  // Shows tests that are general (no speciesId/species specified) or tests matching the selected species name (En or Ar).
+  const filteredCatalog = catalog.filter(t => {
+    if (!data.animalType) return true // Show all if none picked yet
+    if (!t.species && !t.speciesId) return true // General tests are shown for everyone
+    
+    const speciesEn = t.species?.nameEn?.toLowerCase() || ''
+    const speciesAr = t.species?.nameAr || ''
+    const selected = data.animalType.toLowerCase()
+    
+    // Exact match or fallback mapping (e.g. Dog -> Goat remapping)
+    if (selected === 'camel' && (speciesEn.includes('camel') || speciesAr.includes('جمل'))) return true
+    if (selected === 'sheep' && (speciesEn.includes('sheep') || speciesAr.includes('خروف'))) return true
+    if (selected === 'goat' && (speciesEn.includes('goat') || speciesAr.includes('ماعز') || speciesEn.includes('dog'))) return true
+    if (selected === 'cat' && (speciesEn.includes('cat') || speciesAr.includes('قطة'))) return true
+    if (selected === 'horse' && (speciesEn.includes('horse') || speciesAr.includes('حصان'))) return true
+    
+    return false
+  })
+
   // Group catalog by category for easier picking
-  const groupedCatalog = catalog.reduce<Record<string, TestCatalogItem[]>>((acc, t) => {
+  const groupedCatalog = filteredCatalog.reduce<Record<string, TestCatalogItem[]>>((acc, t) => {
     const key = t.categoryAr || t.category || 'عام'
     ;(acc[key] = acc[key] || []).push(t)
     return acc
@@ -318,6 +389,7 @@ export function QuickReportWizard() {
           customerName: data.customerName,
           phone: data.phone,
           animalType: data.animalType,
+          animalAge: data.animalAge,
           animalName: data.animalName || undefined,
           results: data.results.filter(r => r.value).map(r => {
             const { status, critical } = evaluateResult(r.value, r.minNormal, r.maxNormal)
@@ -328,6 +400,7 @@ export function QuickReportWizard() {
               unit: r.unit,
               refRange: r.refRange,
               value: r.value,
+              price: r.price,
               status,
               critical,
             }
@@ -461,16 +534,25 @@ export function QuickReportWizard() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">نوع الحيوان</label>
-                <Select value={data.animalType} onValueChange={v => update('animalType', v)}>
-                  <SelectTrigger><SelectValue placeholder="اختر نوع الحيوان" /></SelectTrigger>
-                  <SelectContent>
-                    {ANIMALS.map(a => (
-                      <SelectItem key={a.value} value={a.value}>
-                        {a.icon} {a.labelAr} — {a.value}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select value={data.animalType} onValueChange={v => update('animalType', v)}>
+                    <SelectTrigger className="flex-1"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
+                    <SelectContent>
+                      {ANIMALS.map(a => (
+                        <SelectItem key={a.value} value={a.value}>
+                          {a.icon} {a.labelAr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={data.animalAge} onValueChange={v => update('animalAge', v)}>
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="little">صغير</SelectItem>
+                      <SelectItem value="old">كبير</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">اسم الحيوان (اختياري)</label>
@@ -538,7 +620,7 @@ export function QuickReportWizard() {
                           <span className="text-muted-foreground text-xs"> ({test.testNameEn})</span>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {test.unit || '—'} · {refRangeOf(test)}
+                          {test.unit || '—'} · {refRangeOf(test, data.animalAge)}
                         </span>
                         <span className="text-xs font-medium text-primary w-14 text-left">{test.price} ر.س</span>
                       </label>
@@ -728,8 +810,8 @@ export function QuickReportWizard() {
             {/* ── Letterhead ───────────────────────────────────────────── */}
             <div className="flex items-center justify-between px-10 py-6 border-b-[3px]" style={{ borderColor: '#3B2063' }}>
               <div className="flex items-center gap-3">
-                <div className="relative w-8 h-8 shrink-0">
-                  <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" />
+                <div className="relative w-20 h-20 shrink-0">
+                  <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" unoptimized />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold" style={{ color: '#3B2063' }}>مؤسسة صنف البيطرية</h1>

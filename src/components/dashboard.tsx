@@ -10,6 +10,7 @@ import {
   Calendar,
   TrendingUp,
   RefreshCw,
+  DollarSign,
 } from 'lucide-react'
 import {
   BarChart,
@@ -32,6 +33,8 @@ interface DashboardData {
   totalCustomers: number
   totalTests: number
   panicCount: number
+  totalRevenue: number
+  revenueThisMonth: number
   animalBreakdown: { type: string; count: number; ar: string; icon: string; color: string }[]
   monthlyData: { month: string; reports: number }[]
   recentReports: {
@@ -41,6 +44,7 @@ interface DashboardData {
     customer: { name: string; phone: string; animalType: string; animalName: string | null }
     resultsCount: number
     hasPanic: boolean
+    reportTotal: number
   }[]
 }
 
@@ -98,6 +102,15 @@ export function DashboardView() {
       bg: 'bg-blue-50',
     },
     {
+      title: 'إيرادات الشهر',
+      value: `${data.revenueThisMonth.toLocaleString()}`,
+      sub: `${data.totalRevenue.toLocaleString()} ر.س إجمالي`,
+      icon: DollarSign,
+      color: 'text-amber-700',
+      bg: 'bg-amber-50',
+      suffix: 'ر.س',
+    },
+    {
       title: 'العملاء المسجلون',
       value: data.totalCustomers,
       sub: 'عميل في السجل',
@@ -118,14 +131,17 @@ export function DashboardView() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map(kpi => (
           <Card key={kpi.title}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">{kpi.title}</p>
-                  <p className="text-3xl font-bold">{kpi.value}</p>
+                  <p className="text-3xl font-bold">
+                    {kpi.value}
+                    {'suffix' in kpi && <span className="text-base font-semibold text-muted-foreground mr-1">{(kpi as any).suffix}</span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">{kpi.sub}</p>
                 </div>
                 <div className={`p-2.5 rounded-lg ${kpi.bg}`}>
@@ -231,6 +247,7 @@ export function DashboardView() {
                     <th className="text-start p-3 font-medium text-muted-foreground">العميل</th>
                     <th className="text-start p-3 font-medium text-muted-foreground">الحيوان</th>
                     <th className="text-start p-3 font-medium text-muted-foreground">الفحوصات</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">السعر</th>
                     <th className="text-start p-3 font-medium text-muted-foreground">التاريخ</th>
                   </tr>
                 </thead>
@@ -249,6 +266,9 @@ export function DashboardView() {
                         {r.customer.animalName || r.customer.animalType}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">{r.resultsCount} فحص</td>
+                      <td className="p-3 text-xs font-mono font-medium">
+                        {r.reportTotal > 0 ? `${r.reportTotal.toLocaleString()} ر.س` : '—'}
+                      </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         {new Date(r.createdAt).toLocaleDateString('ar-SA')}
                       </td>

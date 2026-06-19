@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, FileText, Printer, AlertTriangle, RefreshCw, History } from 'lucide-react'
+import { Search, FileText, Printer, AlertTriangle, RefreshCw, History, Trash2 } from 'lucide-react'
 
 interface PastReportResult {
   catalogId: string
@@ -48,23 +48,38 @@ export function PastReportsView() {
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<PastReport | null>(null)
 
-  const fetchReports = async (q?: string) => {
+  const fetchReports = async (query?: string) => {
     setLoading(true)
     setError(null)
     try {
-      const url = q ? `/api/quick-reports?search=${encodeURIComponent(q)}` : '/api/quick-reports'
-      const res = await fetch(url)
+      const q = query ? `?search=${encodeURIComponent(query)}` : ''
+      const res = await fetch(`/api/quick-reports${q}`)
+      if (!res.ok) throw new Error('فشل تحميل التقارير')
       const json = await res.json()
-      if (json.error) throw new Error(json.error)
       setReports(json.data || [])
-    } catch (e: any) {
-      setError(e.message || 'فشل تحميل سجل التقارير')
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchReports() }, [])
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('هل أنت متأكد من حذف هذا التقرير؟ سيتم حذف الفاتورة المرتبطة به أيضاً.')) return
+
+    try {
+      const res = await fetch(`/api/quick-reports?id=${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('فشل الحذف')
+      fetchReports(search || undefined)
+      if (selected?.id === id) setSelected(null)
+    } catch (err) {
+      alert('حدث خطأ أثناء الحذف')
+    }
+  }
+
+  useEffect(() => {
+    fetchReports() }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => fetchReports(search || undefined), 350)
@@ -101,8 +116,8 @@ export function PastReportsView() {
           {/* ── Letterhead ───────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-10 py-6 border-b-[3px]" style={{ borderColor: '#3B2063' }}>
             <div className="flex items-center gap-3">
-              <div className="relative w-8 h-8 shrink-0">
-                <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" />
+              <div className="relative w-20 h-20 shrink-0">
+                <Image src="/logo.png" alt="Sanaf Veterinary" fill className="object-contain" unoptimized />
               </div>
               <div>
                 <h1 className="text-xl font-bold" style={{ color: '#3B2063' }}>مؤسسة صنف البيطرية</h1>
@@ -274,9 +289,14 @@ export function PastReportsView() {
                         <td className="p-3 text-xs text-muted-foreground">{r.results.length} فحص</td>
                         <td className="p-3 text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString('ar-SA')}</td>
                         <td className="p-3">
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r) }}>
-                            <FileText className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r) }}>
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(r.id, e)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     )

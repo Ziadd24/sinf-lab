@@ -91,6 +91,8 @@ export const testCreateSchema = z.object({
   speciesId: z.string().optional(),
   minNormal: z.number().nullable().optional(),
   maxNormal: z.number().nullable().optional(),
+  minNormalOld: z.number().nullable().optional(),
+  maxNormalOld: z.number().nullable().optional(),
   unit: z.string().optional(),
   price: z.number().min(0, "Price must be non-negative"),
   turnaround: z.string().optional(),
@@ -107,6 +109,8 @@ export const testUpdateSchema = z.object({
   speciesId: z.string().optional(),
   minNormal: z.number().nullable().optional(),
   maxNormal: z.number().nullable().optional(),
+  minNormalOld: z.number().nullable().optional(),
+  maxNormalOld: z.number().nullable().optional(),
   unit: z.string().optional(),
   price: z.number().min(0).optional(),
   turnaround: z.string().optional(),
@@ -115,7 +119,7 @@ export const testUpdateSchema = z.object({
 
 // ─── Invoice ──────────────────────────────────────────────────────────────
 export const invoiceCreateSchema = z.object({
-  clinicId: z.string().min(1, "Clinic is required"),
+  clinicId: z.string().optional(),
   subTotal: z.number().min(0, "Subtotal must be non-negative"),
   vatRate: z.number().default(0.15),
   vatAmount: z.number().min(0),

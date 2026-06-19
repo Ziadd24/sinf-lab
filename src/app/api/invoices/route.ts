@@ -19,6 +19,7 @@ export async function GET(request: Request) {
           OR: [
             { invoiceNumber: { contains: search } },
             { clinic: { clinicName: { contains: search } } },
+            { quickReport: { customer: { name: { contains: search } } } },
           ],
         }
       : {}
@@ -31,6 +32,9 @@ export async function GET(request: Request) {
         take: limit,
         include: {
           clinic: true,
+          quickReport: {
+            include: { customer: true },
+          },
           _count: { select: { samples: true } },
         },
       }),

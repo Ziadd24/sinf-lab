@@ -24,6 +24,8 @@ interface TestItem {
   categoryAr: string | null
   minNormal: number | null
   maxNormal: number | null
+  minNormalOld: number | null
+  maxNormalOld: number | null
   unit: string | null
   price: number
   turnaround: string | null
@@ -38,6 +40,8 @@ const emptyForm = {
   categoryAr: '',
   minNormal: '',
   maxNormal: '',
+  minNormalOld: '',
+  maxNormalOld: '',
   unit: '',
   price: '',
   turnaround: '',
@@ -96,6 +100,8 @@ export function TestCatalogView() {
       categoryAr: t.categoryAr || '',
       minNormal: t.minNormal?.toString() || '',
       maxNormal: t.maxNormal?.toString() || '',
+      minNormalOld: t.minNormalOld?.toString() || '',
+      maxNormalOld: t.maxNormalOld?.toString() || '',
       unit: t.unit || '',
       price: t.price.toString(),
       turnaround: t.turnaround || '',
@@ -115,6 +121,8 @@ export function TestCatalogView() {
         categoryAr: form.categoryAr || undefined,
         minNormal: form.minNormal ? parseFloat(form.minNormal) : undefined,
         maxNormal: form.maxNormal ? parseFloat(form.maxNormal) : undefined,
+        minNormalOld: form.minNormalOld ? parseFloat(form.minNormalOld) : undefined,
+        maxNormalOld: form.maxNormalOld ? parseFloat(form.maxNormalOld) : undefined,
         unit: form.unit || undefined,
         price: parseFloat(form.price),
         turnaround: form.turnaround || undefined,
@@ -244,62 +252,101 @@ export function TestCatalogView() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingId ? 'تعديل فحص' : 'فحص جديد'}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>الرمز *</Label>
-                <Input value={form.testCode} onChange={e => setForm({ ...form, testCode: e.target.value })} placeholder="CBC" />
-              </div>
-              <div>
-                <Label>السعر (ر.س) *</Label>
-                <Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} placeholder="80" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>الاسم (عربي) *</Label>
-                <Input value={form.testNameAr} onChange={e => setForm({ ...form, testNameAr: e.target.value })} dir="rtl" />
-              </div>
-              <div>
-                <Label>الاسم (إنجليزي) *</Label>
-                <Input value={form.testNameEn} onChange={e => setForm({ ...form, testNameEn: e.target.value })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>التصنيف (عربي)</Label>
-                <Input value={form.categoryAr} onChange={e => setForm({ ...form, categoryAr: e.target.value })} placeholder="أمراض الدم" dir="rtl" />
-              </div>
-              <div>
-                <Label>التصنيف (إنجليزي)</Label>
-                <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Hematology" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>الحد الأدنى</Label>
-                <Input type="number" value={form.minNormal} onChange={e => setForm({ ...form, minNormal: e.target.value })} />
-              </div>
-              <div>
-                <Label>الحد الأقصى</Label>
-                <Input type="number" value={form.maxNormal} onChange={e => setForm({ ...form, maxNormal: e.target.value })} />
-              </div>
-              <div>
-                <Label>الوحدة</Label>
-                <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="g/dL" />
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold border-b pb-2">
+              {editingId ? 'تعديل فحص مخبري' : 'إضافة فحص مخبري جديد'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            
+            {/* القسم الأول: معلومات الفحص الأساسية */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">معلومات الفحص الأساسية</h3>
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg border">
+                <div>
+                  <Label className="text-xs font-medium">الرمز *</Label>
+                  <Input className="h-9 mt-1" value={form.testCode} onChange={e => setForm({ ...form, testCode: e.target.value })} placeholder="CBC" />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">السعر (ر.س) *</Label>
+                  <Input className="h-9 mt-1" type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} placeholder="80" />
+                </div>
+                <div className="col-span-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-medium">الاسم (عربي) *</Label>
+                    <Input className="h-9 mt-1 text-right" value={form.testNameAr} onChange={e => setForm({ ...form, testNameAr: e.target.value })} dir="rtl" placeholder="هيموغلوبين" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">الاسم (إنجليزي) *</Label>
+                    <Input className="h-9 mt-1" value={form.testNameEn} onChange={e => setForm({ ...form, testNameEn: e.target.value })} placeholder="Hemoglobin" />
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <Label>مدة الإنجاز</Label>
-              <Input value={form.turnaround} onChange={e => setForm({ ...form, turnaround: e.target.value })} placeholder="2-4 ساعات" />
+
+            {/* القسم الثاني: التصنيف والوحدة */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">التصنيف والوحدات الطبية</h3>
+              <div className="grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="col-span-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs font-medium">التصنيف (عربي)</Label>
+                    <Input className="h-9 mt-1 text-right" value={form.categoryAr} onChange={e => setForm({ ...form, categoryAr: e.target.value })} placeholder="أمراض الدم" dir="rtl" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium">التصنيف (إنجليزي)</Label>
+                    <Input className="h-9 mt-1" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Hematology" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">الوحدة الطبية</Label>
+                  <Input className="h-9 mt-1 font-mono" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="g/dL" />
+                </div>
+              </div>
             </div>
+
+            {/* القسم الثالث: المعدلات الطبيعية حسب فئة العمر */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">نطاق المعدل الطبيعي (المواليد والبالغين)</h3>
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border">
+                {/* فئة الحيوانات الصغيرة */}
+                <div className="space-y-2 border-l pl-3">
+                  <span className="text-xs font-bold text-primary block mb-1">صغير السن (Little)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">الحد الأدنى</Label>
+                      <Input className="h-8 mt-0.5" type="number" step="any" value={form.minNormal} onChange={e => setForm({ ...form, minNormal: e.target.value })} placeholder="0" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">الحد الأقصى</Label>
+                      <Input className="h-8 mt-0.5" type="number" step="any" value={form.maxNormal} onChange={e => setForm({ ...form, maxNormal: e.target.value })} placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* فئة الحيوانات الكبيرة */}
+                <div className="space-y-2 pr-1">
+                  <span className="text-xs font-bold text-primary block mb-1">كبير السن (Old)</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">الحد الأدنى</Label>
+                      <Input className="h-8 mt-0.5" type="number" step="any" value={form.minNormalOld} onChange={e => setForm({ ...form, minNormalOld: e.target.value })} placeholder="0" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] text-muted-foreground">الحد الأقصى</Label>
+                      <Input className="h-8 mt-0.5" type="number" step="any" value={form.maxNormalOld} onChange={e => setForm({ ...form, maxNormalOld: e.target.value })} placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>إلغاء</Button>
-            <Button onClick={handleSave} disabled={saving || !form.testCode || !form.testNameAr || !form.price}>
-              {saving ? 'جاري الحفظ...' : 'حفظ'}
+          <DialogFooter className="border-t pt-3 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowDialog(false)}>إلغاء</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving || !form.testCode || !form.testNameAr || !form.price}>
+              {saving ? 'جاري الحفظ...' : 'حفظ الفحص'}
             </Button>
           </DialogFooter>
         </DialogContent>

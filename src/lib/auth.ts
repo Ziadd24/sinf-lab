@@ -1,43 +1,36 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcryptjs from "bcryptjs";
-import { db } from "@/lib/db";
+
+// Single-operator system — one fixed account, no database lookup or roles.
+const FIXED_USERNAME = "drsinf";
+const FIXED_PASSWORD = "123";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           throw new Error("Invalid credentials");
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user || !user.active) {
-          throw new Error("User not found or inactive");
-        }
-
-        const isPasswordValid = await bcryptjs.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid password");
+        if (
+          credentials.username !== FIXED_USERNAME ||
+          credentials.password !== FIXED_PASSWORD
+        ) {
+          throw new Error("Invalid username or password");
         }
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.fullName,
-          role: user.role as "ADMIN" | "DOCTOR" | "TECHNICIAN",
+          id: "drsinf",
+          email: "drsinf@sinf-vet.local",
+          name: "د. صنف",
+          role: "ADMIN",
         };
       },
     }),

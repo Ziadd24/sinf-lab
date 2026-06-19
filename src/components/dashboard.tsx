@@ -1,16 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useLanguage } from '@/lib/language-context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import {
-  TestTube2,
-  Activity,
-  DollarSign,
+  ClipboardList,
+  Users,
+  FlaskConical,
   AlertTriangle,
+  Calendar,
   TrendingUp,
+  RefreshCw,
 } from 'lucide-react'
 import {
   BarChart,
@@ -21,62 +20,45 @@ import {
   PieChart,
   Pie,
   Cell,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart'
 
 interface DashboardData {
-  totalSamples: number
-  activeSamples: number
-  totalClinics: number
-  totalPets: number
+  totalReports: number
+  reportsToday: number
+  reportsThisWeek: number
+  reportsThisMonth: number
+  totalCustomers: number
   totalTests: number
-  panicAlerts: number
-  revenueThisMonth: number
-  totalRevenue: number
-  invoiceStats: { status: string; _count: { status: number }; _sum: { totalAmount: number | null } }[]
-  monthlyData: { month: string; samples: number }[]
-  samplesBySpecies: { name: string; nameAr: string; count: number; fill: string }[]
-  recentSamples: {
+  panicCount: number
+  animalBreakdown: { type: string; count: number; ar: string; icon: string; color: string }[]
+  monthlyData: { month: string; reports: number }[]
+  recentReports: {
     id: string
-    barcode: string
-    status: string
-    priority: string
-    collectedAt: string
-    pet: { name: string; nameAr: string | null; species: { nameEn: string; nameAr: string; icon: string | null } }
-    clinic: { clinicName: string; clinicNameAr: string | null } | null
-    results: { isPanic: boolean }[]
+    reportId: string
+    createdAt: string
+    customer: { name: string; phone: string; animalType: string; animalName: string | null }
+    resultsCount: number
+    hasPanic: boolean
   }[]
-  topClinics: { id: string; name: string; nameAr: string | null; revenue: number; sampleCount: number }[]
 }
 
-const barChartConfig = {
-  samples: { label: 'العينات', color: '#053e76' },
-} satisfies ChartConfig
-
-const pieChartConfig = {
-  Camel: { label: 'إبل', color: '#053e76' },
-  Falcon: { label: 'صقور', color: '#2b649c' },
-  Dog: { label: 'كلاب', color: '#1a5c96' },
-  Cat: { label: 'قطط', color: '#3d7ab5' },
-  Horse: { label: 'خيول', color: '#0a2d5c' },
-} satisfies ChartConfig
-
 export function DashboardView() {
-  const { t } = useLanguage()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true)
+    setError(false)
     fetch('/api/dashboard')
-      .then(res => res.json())
+      .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [])
+      .catch(() => { setError(true); setLoading(false) })
+  }
+
+  useEffect(() => { fetchData() }, [])
 
   if (loading) {
     return (
@@ -86,84 +68,65 @@ export function DashboardView() {
     )
   }
 
-  if (!data) return null
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+        <AlertTriangle className="w-10 h-10 text-destructive opacity-60" />
+        <p className="text-sm text-destructive font-medium">فشل تحميل لوحة التحكم</p>
+        <button onClick={fetchData} className="flex items-center gap-2 text-xs border rounded-md px-3 py-1.5 hover:bg-muted/30">
+          <RefreshCw className="w-3 h-3" /> إعادة المحاولة
+        </button>
+      </div>
+    )
+  }
 
   const kpis = [
     {
-      title: t('Total Samples', 'إجمالي العينات'),
-      value: data.totalSamples,
-      icon: TestTube2,
-      trend: '+12%',
-      trendLabel: t('vs last month', 'مقارنة بالشهر الماضي'),
-      color: 'text-[#053e76]',
-      bg: 'bg-[#e8f0fa]',
+      title: 'تقارير اليوم',
+      value: data.reportsToday,
+      sub: `${data.reportsThisWeek} هذا الأسبوع`,
+      icon: Calendar,
+      color: 'text-purple-700',
+      bg: 'bg-purple-50',
     },
     {
-      title: t('Active Samples', 'العينات النشطة'),
-      value: data.activeSamples,
-      icon: Activity,
-      trend: `${data.activeSamples}`,
-      trendLabel: t('in progress', 'قيد التنفيذ'),
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
+      title: 'تقارير الشهر',
+      value: data.reportsThisMonth,
+      sub: `${data.totalReports} إجمالي`,
+      icon: ClipboardList,
+      color: 'text-blue-700',
+      bg: 'bg-blue-50',
     },
     {
-      title: t('Revenue This Month', 'الإيرادات هذا الشهر'),
-      value: `${data.revenueThisMonth.toLocaleString()} ر.س`,
-      icon: DollarSign,
-      trend: '+8%',
-      trendLabel: t('vs last month', 'مقارنة بالشهر الماضي'),
-      color: 'text-[#053e76]',
-      bg: 'bg-[#e8f0fa]',
+      title: 'العملاء المسجلون',
+      value: data.totalCustomers,
+      sub: 'عميل في السجل',
+      icon: Users,
+      color: 'text-green-700',
+      bg: 'bg-green-50',
     },
     {
-      title: t('Panic Alerts', 'تنبيهات حرجة'),
-      value: data.panicAlerts,
+      title: 'قيم حرجة',
+      value: data.panicCount,
+      sub: data.panicCount > 0 ? 'تستوجب المراجعة' : 'لا توجد تنبيهات',
       icon: AlertTriangle,
-      trend: data.panicAlerts > 0 ? t('Action needed', 'يتطلب إجراء') : t('All clear', 'كل شيء جيد'),
-      trendLabel: '',
-      color: data.panicAlerts > 0 ? 'text-red-600' : 'text-green-600',
-      bg: data.panicAlerts > 0 ? 'bg-red-50' : 'bg-green-50',
+      color: data.panicCount > 0 ? 'text-red-700' : 'text-gray-500',
+      bg: data.panicCount > 0 ? 'bg-red-50' : 'bg-gray-50',
     },
   ]
 
-  const statusBadge: Record<string, { ar: string; className: string }> = {
-    Collected: { ar: 'تم الجمع', className: 'bg-gray-100 text-gray-700' },
-    In_Progress: { ar: 'قيد التنفيذ', className: 'bg-amber-100 text-amber-700' },
-    Completed: { ar: 'مكتمل', className: 'bg-green-100 text-green-700' },
-    Approved: { ar: 'معتمد', className: 'bg-[#d1e3f5] text-[#053e76]' },
-  }
-
-  const priorityBadge: Record<string, { ar: string; className: string }> = {
-    Normal: { ar: 'عادي', className: 'bg-gray-100 text-gray-600' },
-    Urgent: { ar: 'عاجل', className: 'bg-orange-100 text-orange-700' },
-    STAT: { ar: 'طارئ', className: 'bg-red-100 text-red-700' },
-  }
-
-  // Invoice progress
-  const totalInvoices = data.invoiceStats.reduce((s, i) => s + i._count.status, 0) || 1
-  const paidCount = data.invoiceStats.find(i => i.status === 'Paid')?._count.status || 0
-  const partialCount = data.invoiceStats.find(i => i.status === 'Partially_Paid')?._count.status || 0
-  const unpaidCount = data.invoiceStats.find(i => i.status === 'Unpaid')?._count.status || 0
-
-  const maxRevenue = Math.max(...data.topClinics.map(c => c.revenue), 1)
-
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6" dir="rtl">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(kpi => (
-          <Card key={kpi.title} className="relative overflow-hidden">
+          <Card key={kpi.title}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                  <p className="text-2xl font-bold">{kpi.value}</p>
-                  <div className="flex items-center gap-1 text-xs">
-                    <TrendingUp className="w-3 h-3" />
-                    <span className={kpi.color}>{kpi.trend}</span>
-                    {kpi.trendLabel && <span className="text-muted-foreground">{kpi.trendLabel}</span>}
-                  </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">{kpi.title}</p>
+                  <p className="text-3xl font-bold">{kpi.value}</p>
+                  <p className="text-xs text-muted-foreground">{kpi.sub}</p>
                 </div>
                 <div className={`p-2.5 rounded-lg ${kpi.bg}`}>
                   <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
@@ -174,176 +137,129 @@ export function DashboardView() {
         ))}
       </div>
 
-      {/* Charts Row */}
+      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Monthly Volume Chart */}
+        {/* Monthly volume */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{t('Monthly Sample Volume', 'حجم العينات الشهري')}</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" /> حجم التقارير الشهري
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={barChartConfig} className="h-[280px] w-full">
-              <BarChart data={data.monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="samples" fill="var(--color-samples)" radius={[4, 4, 0, 0]} />
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={data.monthlyData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: any) => [v, 'تقارير']}
+                />
+                <Bar dataKey="reports" fill="#3B2063" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ChartContainer>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Species Distribution */}
+        {/* Animal type breakdown */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{t('Samples by Species', 'العينات حسب النوع')}</CardTitle>
+            <CardTitle className="text-base">العملاء حسب نوع الحيوان</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={pieChartConfig} className="h-[280px] w-full">
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Pie
-                  data={data.samplesBySpecies}
-                  dataKey="count"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={90}
-                  paddingAngle={2}
-                >
-                  {data.samplesBySpecies.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+            {data.animalBreakdown.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
+                <FlaskConical className="w-8 h-8 opacity-20" />
+                <p className="text-xs">لا توجد بيانات بعد</p>
+              </div>
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie
+                      data={data.animalBreakdown}
+                      dataKey="count"
+                      nameKey="ar"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={3}
+                    >
+                      {data.animalBreakdown.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                      formatter={(v: any, name: any) => [v, name]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap gap-2 justify-center mt-1">
+                  {data.animalBreakdown.map(a => (
+                    <span key={a.type} className="flex items-center gap-1 text-xs">
+                      <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: a.color }} />
+                      {a.icon} {a.ar} ({a.count})
+                    </span>
                   ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
-            <div className="flex flex-wrap gap-3 justify-center mt-2">
-              {data.samplesBySpecies.map(s => (
-                <div key={s.name} className="flex items-center gap-1.5 text-xs">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.fill }} />
-                  <span>{s.nameAr} ({s.count})</span>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Recent Samples */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{t('Recent Samples', 'آخر العينات')}</CardTitle>
-          </CardHeader>
+      {/* Recent reports */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">آخر التقارير</CardTitle>
+        </CardHeader>
+        {data.recentReports.length === 0 ? (
+          <CardContent className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+            <ClipboardList className="w-10 h-10 opacity-20" />
+            <p className="text-sm">لا توجد تقارير بعد — ابدأ بإنشاء تقرير سريع</p>
+          </CardContent>
+        ) : (
           <CardContent className="p-0">
-            <div className="max-h-80 overflow-y-auto custom-scrollbar">
+            <div className="max-h-72 overflow-y-auto custom-scrollbar">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
-                    <th className="text-start p-3 font-medium text-muted-foreground">{t('Barcode', 'الباركود')}</th>
-                    <th className="text-start p-3 font-medium text-muted-foreground">{t('Animal', 'الحيوان')}</th>
-                    <th className="text-start p-3 font-medium text-muted-foreground">{t('Species', 'النوع')}</th>
-                    <th className="text-start p-3 font-medium text-muted-foreground">{t('Status', 'الحالة')}</th>
-                    <th className="text-start p-3 font-medium text-muted-foreground">{t('Priority', 'الأولوية')}</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">رقم التقرير</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">العميل</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">الحيوان</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">الفحوصات</th>
+                    <th className="text-start p-3 font-medium text-muted-foreground">التاريخ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.recentSamples.map(sample => {
-                    const sb = statusBadge[sample.status] || statusBadge.Collected
-                    const pb = priorityBadge[sample.priority] || priorityBadge.Normal
-                    return (
-                      <tr key={sample.id} className="border-t hover:bg-muted/30 transition-colors">
-                        <td className="p-3 font-mono text-xs">{sample.barcode}</td>
-                        <td className="p-3">{sample.pet.nameAr || sample.pet.name}</td>
-                        <td className="p-3">
-                          <span className="flex items-center gap-1.5">
-                            {sample.pet.species.icon && <span>{sample.pet.species.icon}</span>}
-                            {sample.pet.species.nameAr}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${sb.className}`}>
-                            {sb.ar}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${pb.className}`}>
-                            {pb.ar}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {data.recentReports.map(r => (
+                    <tr key={r.id} className={`border-t hover:bg-muted/30 transition-colors ${r.hasPanic ? 'bg-red-50/40' : ''}`}>
+                      <td className="p-3 font-mono text-xs">
+                        {r.reportId}
+                        {r.hasPanic && <AlertTriangle className="w-3 h-3 inline mr-1.5 text-red-500" />}
+                      </td>
+                      <td className="p-3">
+                        <p className="font-medium">{r.customer.name}</p>
+                        <p className="text-xs text-muted-foreground">{r.customer.phone}</p>
+                      </td>
+                      <td className="p-3 text-sm">
+                        {r.customer.animalName || r.customer.animalType}
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{r.resultsCount} فحص</td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {new Date(r.createdAt).toLocaleDateString('ar-SA')}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </CardContent>
-        </Card>
-
-        {/* Right Column */}
-        <div className="space-y-4">
-          {/* Invoice Summary */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{t('Invoice Summary', 'ملخص الفواتير')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('Paid', 'مدفوعة')}</span>
-                  <span className="font-medium text-green-600">{paidCount}/{totalInvoices}</span>
-                </div>
-                <Progress value={(paidCount / totalInvoices) * 100} className="h-2 bg-green-100 [&>div]:bg-green-500" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('Partially Paid', 'مدفوعة جزئياً')}</span>
-                  <span className="font-medium text-amber-600">{partialCount}/{totalInvoices}</span>
-                </div>
-                <Progress value={(partialCount / totalInvoices) * 100} className="h-2 bg-amber-100 [&>div]:bg-amber-500" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('Unpaid', 'غير مدفوعة')}</span>
-                  <span className="font-medium text-red-600">{unpaidCount}/{totalInvoices}</span>
-                </div>
-                <Progress value={(unpaidCount / totalInvoices) * 100} className="h-2 bg-red-100 [&>div]:bg-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Top Clinics */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{t('Top Clinics', 'أفضل العيادات')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {data.topClinics.map((clinic, idx) => (
-                <div key={clinic.id} className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{clinic.nameAr || clinic.name}</p>
-                    <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                      <div
-                        className="bg-primary h-1.5 rounded-full transition-all"
-                        style={{ width: `${(clinic.revenue / maxRevenue) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {clinic.revenue.toLocaleString()} ر.س
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        )}
+      </Card>
     </div>
   )
 }

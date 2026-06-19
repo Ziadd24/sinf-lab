@@ -7,124 +7,109 @@ export async function GET(request: Request) {
   if (!auth.authorized) return auth.response
 
   try {
-    // Basic counts
-    const [totalSamples, activeSamples, totalClinics, totalPets, totalTests] = await Promise.all([
-      db.labSample.count(),
-      db.labSample.count({ where: { status: { in: ['Collected', 'In_Progress'] } } }),
-      db.clinic.count({ where: { active: true } }),
-      db.pet.count(),
-      db.testCatalog.count({ where: { active: true } }),
-    ])
-
-    // Panic alerts count
-    const panicAlerts = await db.sampleResult.count({ where: { isPanic: true } })
-
-    // Revenue - sum of paid amounts this month (optimized with aggregation)
     const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startOfWeek = new Date(startOfToday)
+    startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay())
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    const [revenueThisMonthResult, totalRevenueResult] = await Promise.all([
-      db.invoice.aggregate({
-        _sum: { paidAmount: true },
-        where: { paidAmount: { gt: 0 }, createdAt: { gte: startOfMonth } },
+    const [
+      totalReports,
+      reportsToday,
+      reportsThisWeek,
+      reportsThisMonth,
+      totalCustomers,
+      totalTests,
+      recentReports,
+      allReports,
+    ] = await Promise.all([
+      db.quickReport.count(),
+      db.quickReport.count({ where: { createdAt: { gte: startOfToday } } }),
+      db.quickReport.count({ where: { createdAt: { gte: startOfWeek } } }),
+      db.quickReport.count({ where: { createdAt: { gte: startOfMonth } } }),
+      db.quickCustomer.count(),
+      db.testCatalog.count({ where: { active: true } }),
+      db.quickReport.findMany({
+        take: 8,
+        orderBy: { createdAt: 'desc' },
+        include: { customer: true },
       }),
-      db.invoice.aggregate({
-        _sum: { paidAmount: true },
-        where: { paidAmount: { gt: 0 } },
+      db.quickReport.findMany({
+        select: { resultsJson: true, createdAt: true },
       }),
     ])
 
-    const revenueThisMonth = revenueThisMonthResult._sum.paidAmount || 0
-    const totalRevenue = totalRevenueResult._sum.paidAmount || 0
+    // Animal type breakdown
+    const customers = await db.quickCustomer.findMany({ select: { animalType: true } })
+    const animalMap: Record<string, number> = {}
+    customers.forEach(c => { animalMap[c.animalType] = (animalMap[c.animalType] || 0) + 1 })
 
-    // Invoice status breakdown
-    const invoiceStats = await db.invoice.groupBy({
-      by: ['status'],
-      _count: { status: true },
-      _sum: { totalAmount: true },
-    })
+    const ANIMAL_LABELS: Record<string, { ar: string; icon: string; color: string }> = {
+      Camel: { ar: 'جمل', icon: '🐫', color: '#3B2063' },
+      Sheep: { ar: 'خروف', icon: '🐑', color: '#5C3D9E' },
+      Goat:  { ar: 'ماعز', icon: '🐐', color: '#C9971F' },
+      Cat:   { ar: 'قطة', icon: '🐈', color: '#8B5CF6' },
+      Horse: { ar: 'حصان', icon: '🐎', color: '#EAB308' },
+    }
 
-    // Monthly sample volume (last 6 months)
-    const monthlyData = []
+    const animalBreakdown = Object.entries(animalMap)
+      .map(([type, count]) => ({
+        type,
+        count,
+        ar: ANIMAL_LABELS[type]?.ar || type,
+        icon: ANIMAL_LABELS[type]?.icon || '🐾',
+        color: ANIMAL_LABELS[type]?.color || '#999',
+      }))
+      .sort((a, b) => b.count - a.count)
+
+    // Revenue this month (sum prices of all results in reports this month)
+    let revenueThisMonth = 0
+    let totalRevenue = 0
+    let panicCount = 0
+
+    for (const r of allReports) {
+      try {
+        const results = JSON.parse(r.resultsJson)
+        const thisMonth = r.createdAt >= startOfMonth
+
+        for (const res of results) {
+          if (res.critical) panicCount++
+        }
+      } catch {}
+    }
+
+    // Monthly report volume (last 6 months)
+    const monthlyData: { month: string; reports: number }[] = []
     for (let i = 5; i >= 0; i--) {
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
-      const count = await db.labSample.count({
-        where: { collectedAt: { gte: monthStart, lte: monthEnd } },
+      const mStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
+      const count = await db.quickReport.count({
+        where: { createdAt: { gte: mStart, lte: mEnd } },
       })
       monthlyData.push({
-        month: monthStart.toLocaleDateString('ar-SA', { month: 'short' }),
-        samples: count,
+        month: mStart.toLocaleDateString('ar-SA', { month: 'short' }),
+        reports: count,
       })
     }
 
-    // Samples by species — optimized with aggregation instead of loading all samples
-    const samplesWithSpecies = await db.labSample.findMany({
-      select: { pet: { select: { speciesId: true, species: { select: { id: true, nameEn: true, nameAr: true } } } } },
-    })
-
-    const speciesMap = new Map<string, { name: string; nameAr: string; count: number; fill: string }>()
-    const speciesColors = ['#053e76', '#2b649c', '#1a5c96', '#3d7ab5', '#0a2d5c']
-    let colorIdx = 0
-    for (const sample of samplesWithSpecies) {
-      const sp = sample.pet.species
-      if (!speciesMap.has(sp.id)) {
-        speciesMap.set(sp.id, {
-          name: sp.nameEn,
-          nameAr: sp.nameAr,
-          count: 0,
-          fill: speciesColors[colorIdx % speciesColors.length],
-        })
-        colorIdx++
-      }
-      speciesMap.get(sp.id)!.count++
-    }
-    const samplesBySpecies = Array.from(speciesMap.values())
-
-    // Recent samples
-    const recentSamples = await db.labSample.findMany({
-      take: 10,
-      orderBy: { collectedAt: 'desc' },
-      include: {
-        pet: { include: { species: true } },
-        clinic: true,
-        results: true,
-      },
-    })
-
-    // Top clinics by revenue
-    const clinicsWithRevenue = await db.clinic.findMany({
-      where: { active: true },
-      include: {
-        invoices: { select: { paidAmount: true } },
-        _count: { select: { samples: true } },
-      },
-    })
-    const topClinics = clinicsWithRevenue
-      .map(c => ({
-        id: c.id,
-        name: c.clinicName,
-        nameAr: c.clinicNameAr,
-        revenue: c.invoices.reduce((sum, inv) => sum + inv.paidAmount, 0),
-        sampleCount: c._count.samples,
-      }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5)
-
     return NextResponse.json({
-      totalSamples,
-      activeSamples,
-      totalClinics,
-      totalPets,
+      totalReports,
+      reportsToday,
+      reportsThisWeek,
+      reportsThisMonth,
+      totalCustomers,
       totalTests,
-      panicAlerts,
-      revenueThisMonth,
-      totalRevenue,
-      invoiceStats,
+      panicCount,
+      animalBreakdown,
       monthlyData,
-      samplesBySpecies,
-      recentSamples,
-      topClinics,
+      recentReports: recentReports.map(r => ({
+        id: r.id,
+        reportId: r.reportId,
+        createdAt: r.createdAt,
+        customer: r.customer,
+        resultsCount: (() => { try { return JSON.parse(r.resultsJson).length } catch { return 0 } })(),
+        hasPanic: (() => { try { return JSON.parse(r.resultsJson).some((x: any) => x.critical) } catch { return false } })(),
+      })),
     })
   } catch (error) {
     console.error('Error fetching dashboard:', error)

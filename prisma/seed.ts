@@ -455,10 +455,9 @@ async function main() {
   console.log(`  Invoices: 6`)
   console.log(`  Samples: ${samples.length}`)
   console.log(`  Results: 10`)
-  console.log(`  Users: 3 (admin, doctor, technician)`)
-  console.log('\n🔑 Default Credentials:')
-  console.log('  Email: admin@lab.sa | doctor1@lab.sa | tech1@lab.sa')
-  console.log('  Password: admin123')
+  console.log('\n🔑 Login Credentials (single-operator system):')
+  console.log('  Username: drsinf')
+  console.log('  Password: 123')
 }
 
 main()

@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        username,
         password,
         redirect: false,
       });
@@ -29,7 +29,7 @@ export default function LoginPage() {
       if (result?.error) {
         toast({
           title: 'خطأ في تسجيل الدخول',
-          description: 'بريد إلكتروني أو كلمة مرور غير صحيحة',
+          description: 'اسم المستخدم أو كلمة المرور غير صحيحة',
           variant: 'destructive',
         });
         setIsLoading(false);
@@ -69,17 +69,18 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                البريد الإلكتروني
+              <label htmlFor="username" className="text-sm font-medium">
+                اسم المستخدم
               </label>
               <Input
-                id="email"
-                type="email"
-                placeholder="doctor@lab.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="drsinf"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
                 required
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -94,6 +95,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 required
+                autoComplete="current-password"
               />
             </div>
             <Button

@@ -259,10 +259,31 @@ export function QuickReportWizard() {
   }
 
   const applyBundle = (bundle: typeof BUNDLES[0]) => {
-    const testsToAdd = bundle.testCodes
+    const bundleTests = bundle.testCodes
       .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
-      .filter((t): t is TestCatalogItem => !!t && !data.selectedTestIds.includes(t.id))
-    testsToAdd.forEach(test => toggleTest(test))
+      .filter((t): t is TestCatalogItem => !!t)
+
+    const allSelected = bundleTests.length > 0 && bundleTests.every(t => data.selectedTestIds.includes(t.id))
+
+    if (allSelected) {
+      // Bundle is fully active — clicking again removes exactly these tests
+      setData(prev => ({
+        ...prev,
+        selectedTestIds: prev.selectedTestIds.filter(id => !bundleTests.some(t => t.id === id)),
+        results: prev.results.filter(r => !bundleTests.some(t => t.id === r.catalogId)),
+      }))
+    } else {
+      // Add whichever bundle tests aren't already selected
+      const testsToAdd = bundleTests.filter(t => !data.selectedTestIds.includes(t.id))
+      testsToAdd.forEach(test => toggleTest(test))
+    }
+  }
+
+  const isBundleActive = (bundle: typeof BUNDLES[0]) => {
+    const bundleTests = bundle.testCodes
+      .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
+      .filter((t): t is TestCatalogItem => !!t)
+    return bundleTests.length > 0 && bundleTests.every(t => data.selectedTestIds.includes(t.id))
   }
 
   const updateResultValue = (catalogId: string, value: string) =>
@@ -464,12 +485,22 @@ export function QuickReportWizard() {
             {/* Quick-pick bundles */}
             <div>
               <label className="text-sm font-medium mb-2 block">باقات سريعة</label>
-                <div className="flex flex-wrap gap-2">
-                  {BUNDLES.map(b => (
-                  <Button key={b.id} type="button" variant="outline" size="sm" onClick={() => applyBundle(b)} className="text-xs">
-                  {b.nameAr} ({b.testCodes.length})
-                  </Button>
-                 ))}
+              <div className="flex flex-wrap gap-2">
+                {BUNDLES.map(b => {
+                  const active = isBundleActive(b)
+                  return (
+                    <Button
+                      key={b.id}
+                      type="button"
+                      variant={active ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => applyBundle(b)}
+                      className="text-xs"
+                    >
+                      {active && '✓ '}{b.nameAr} ({b.testCodes.length})
+                    </Button>
+                  )
+                })}
               </div>
             </div>
 

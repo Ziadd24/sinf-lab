@@ -12,8 +12,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Pencil, Trash2, FlaskConical, AlertTriangle, RefreshCw, Search } from 'lucide-react'
+
+const COMMON_UNITS = ['g/dL', 'mg/dL', 'µg/dL', 'U/L', '%', '10³/µL', '10⁶/µL', 'ng/mL', '—']
 
 interface TestItem {
   id: string
@@ -30,6 +40,14 @@ interface TestItem {
   price: number
   turnaround: string | null
   active: boolean
+  animalIds: string | null
+}
+
+interface AnimalItem {
+  id: string
+  nameEn: string
+  nameAr: string
+  icon: string | null
 }
 
 const emptyForm = {
@@ -45,6 +63,7 @@ const emptyForm = {
   unit: '',
   price: '',
   turnaround: '',
+  animalIds: [] as string[],
 }
 
 export function TestCatalogView() {
@@ -56,6 +75,17 @@ export function TestCatalogView() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [animals, setAnimals] = useState<AnimalItem[]>([])
+
+  const fetchAnimals = async () => {
+    try {
+      const res = await fetch('/api/animals?limit=100')
+      const json = await res.json()
+      if (!json.error) setAnimals(Array.isArray(json) ? json : json.data || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const fetchTests = async () => {
     setLoading(true)
@@ -72,7 +102,7 @@ export function TestCatalogView() {
     }
   }
 
-  useEffect(() => { fetchTests() }, [])
+  useEffect(() => { fetchTests(); fetchAnimals() }, [])
 
   const filtered = tests.filter(t => {
     if (!search) return true
@@ -105,6 +135,7 @@ export function TestCatalogView() {
       unit: t.unit || '',
       price: t.price.toString(),
       turnaround: t.turnaround || '',
+      animalIds: t.animalIds ? t.animalIds.split(',').filter(Boolean) : [],
     })
     setShowDialog(true)
   }
@@ -117,15 +148,16 @@ export function TestCatalogView() {
         testCode: form.testCode,
         testNameEn: form.testNameEn,
         testNameAr: form.testNameAr,
-        category: form.category || undefined,
-        categoryAr: form.categoryAr || undefined,
-        minNormal: form.minNormal ? parseFloat(form.minNormal) : undefined,
-        maxNormal: form.maxNormal ? parseFloat(form.maxNormal) : undefined,
-        minNormalOld: form.minNormalOld ? parseFloat(form.minNormalOld) : undefined,
-        maxNormalOld: form.maxNormalOld ? parseFloat(form.maxNormalOld) : undefined,
-        unit: form.unit || undefined,
+        category: form.category === '' ? null : form.category,
+        categoryAr: form.categoryAr === '' ? null : form.categoryAr,
+        minNormal: form.minNormal === '' ? null : parseFloat(form.minNormal),
+        maxNormal: form.maxNormal === '' ? null : parseFloat(form.maxNormal),
+        minNormalOld: form.minNormalOld === '' ? null : parseFloat(form.minNormalOld),
+        maxNormalOld: form.maxNormalOld === '' ? null : parseFloat(form.maxNormalOld),
+        unit: form.unit === '' ? null : form.unit,
         price: parseFloat(form.price),
-        turnaround: form.turnaround || undefined,
+        turnaround: form.turnaround === '' ? null : form.turnaround,
+        animalIds: form.animalIds.length > 0 ? form.animalIds.join(',') : null,
       }
 
       const res = editingId
@@ -301,7 +333,43 @@ export function TestCatalogView() {
                 </div>
                 <div>
                   <Label className="text-xs font-medium">الوحدة الطبية</Label>
-                  <Input className="h-9 mt-1 font-mono" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="g/dL" />
+                  <Select
+                    value={COMMON_UNITS.includes(form.unit) ? form.unit : (form.unit ? 'custom' : '—')}
+                    onValueChange={(val) => {
+                      if (val === 'custom') {
+                        setForm({ ...form, unit: 'custom-input' })
+                      } else if (val === '—') {
+                        setForm({ ...form, unit: '' })
+                      } else {
+                        setForm({ ...form, unit: val })
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9 mt-1 font-mono">
+                      <SelectValue placeholder="اختر الوحدة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="—">— (بدون وحدة)</SelectItem>
+                      <SelectItem value="g/dL">g/dL</SelectItem>
+                      <SelectItem value="mg/dL">mg/dL</SelectItem>
+                      <SelectItem value="µg/dL">µg/dL</SelectItem>
+                      <SelectItem value="U/L">U/L</SelectItem>
+                      <SelectItem value="%">%</SelectItem>
+                      <SelectItem value="10³/µL">10³/µL</SelectItem>
+                      <SelectItem value="10⁶/µL">10⁶/µL</SelectItem>
+                      <SelectItem value="ng/mL">ng/mL</SelectItem>
+                      <SelectItem value="custom">كتابة يدوية...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {(!COMMON_UNITS.includes(form.unit) || form.unit === 'custom-input') && (
+                    <Input
+                      className="h-9 mt-2 font-mono"
+                      value={form.unit === 'custom-input' ? '' : form.unit}
+                      onChange={e => setForm({ ...form, unit: e.target.value })}
+                      placeholder="اكتب الوحدة هنا..."
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -338,6 +406,34 @@ export function TestCatalogView() {
                       <Input className="h-8 mt-0.5" type="number" step="any" value={form.maxNormalOld} onChange={e => setForm({ ...form, maxNormalOld: e.target.value })} placeholder="0" />
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* القسم الرابع: ينطبق على الحيوانات */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ينطبق على الحيوانات</h3>
+              <div className="p-3 bg-muted/30 rounded-lg border">
+                <p className="text-xs text-muted-foreground mb-3">إذا لم يتم تحديد أي حيوان، فسيظهر الفحص لجميع الحيوانات.</p>
+                <div className="flex flex-wrap gap-4">
+                  {animals.map(a => (
+                    <div key={a.id} className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id={`animal-${a.id}`}
+                        checked={form.animalIds.includes(a.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setForm({ ...form, animalIds: [...form.animalIds, a.id] })
+                          } else {
+                            setForm({ ...form, animalIds: form.animalIds.filter(id => id !== a.id) })
+                          }
+                        }}
+                      />
+                      <label htmlFor={`animal-${a.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                        {a.icon} {a.nameAr}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

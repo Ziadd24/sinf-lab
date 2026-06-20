@@ -35,51 +35,45 @@ interface TestCatalogItem {
   price: number
   species?: { id: string; nameEn: string; nameAr: string } | null
   speciesId?: string | null
+  animalIds?: string | null
+}
+
+interface AnimalItem {
+  id: string
+  nameEn: string
+  nameAr: string
+  icon: string | null
+  active: boolean
 }
 
 // Static test catalog — no database needed for Step 1
 const TEST_CATALOG: TestCatalogItem[] = [
   // ── Hematology ────────────────────────────────────────────────────────────
   { id: 'CBC',     testCode: 'CBC',     testNameEn: 'Complete Blood Count',          testNameAr: 'تعداد دم كامل',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 80 },
-  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9.8,   maxNormal: 15.4,  minNormalOld: 11.0,  maxNormalOld: 17.0,  unit: 'g/dL',   price: 35 },
-  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,   maxNormal: 19.5,  minNormalOld: 6.0,   maxNormalOld: 17.0,  unit: '10³/µL', price: 40 },
-  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume (HCT)',       testNameAr: 'حجم الخلايا المكدسة',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 27,    maxNormal: 45,    minNormalOld: 32,    maxNormalOld: 52,    unit: '%',      price: 30 },
-  { id: 'RBC',     testCode: 'RBC',     testNameEn: 'RBC Count',                      testNameAr: 'عدد كريات الدم الحمراء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.0,   maxNormal: 10.0,  minNormalOld: 5.5,   maxNormalOld: 8.5,   unit: '10⁶/µL', price: 35 },
+  { id: 'HGB',     testCode: 'HGB',     testNameEn: 'Hemoglobin',                     testNameAr: 'هيموغلوبين',                 category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 12.0,  maxNormal: 18.0,  minNormalOld: 11.0,  maxNormalOld: 17.0,  unit: 'g/dL',   price: 35 },
+  { id: 'HGB-CAT', testCode: 'HGB-CAT', testNameEn: 'Hemoglobin (Feline)',            testNameAr: 'هيموغلوبين (قطط)',           category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 9.8,   maxNormal: 15.4,  minNormalOld: 9.0,   maxNormalOld: 14.5,  unit: 'g/dL',   price: 35 },
+  { id: 'WBC',     testCode: 'WBC',     testNameEn: 'White Blood Cell Count',         testNameAr: 'عدد كريات الدم البيضاء',     category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 6.0,   maxNormal: 17.0,  minNormalOld: 5.5,   maxNormalOld: 15.0,  unit: '10³/µL', price: 40 },
+  { id: 'WBC-CAT', testCode: 'WBC-CAT', testNameEn: 'WBC Count (Feline)',            testNameAr: 'عدد كريات بيضاء (قطط)',      category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 5.5,   maxNormal: 19.5,  minNormalOld: 5.0,   maxNormalOld: 18.0,  unit: '10³/µL', price: 40 },
+  { id: 'PCV',     testCode: 'PCV',     testNameEn: 'Packed Cell Volume (HCT)',       testNameAr: 'حجم الخلايا المكدسة',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 20.0,  maxNormal: 37.0,  minNormalOld: 24.0,  maxNormalOld: 42.0,  unit: '%',      price: 30 },
+  { id: 'RBC-CAM', testCode: 'RBC-CAM', testNameEn: 'RBC Count (Camel)',              testNameAr: 'عدد كريات حمراء (إبل)',      category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 6.8,   maxNormal: 13.6,  minNormalOld: 6.0,   maxNormalOld: 12.0,  unit: '10⁶/µL', price: 45 },
   { id: 'PLT',     testCode: 'PLT',     testNameEn: 'Platelet Count',                 testNameAr: 'عدد الصفائح الدموية',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 175,   maxNormal: 500,   minNormalOld: 200,   maxNormalOld: 500,   unit: '10³/µL', price: 30 },
   { id: 'RETIC',   testCode: 'RETIC',   testNameEn: 'Reticulocyte Count',             testNameAr: 'عدد الخلايا الشبكية',        category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: 0,     maxNormal: 1.5,   minNormalOld: 0,     maxNormalOld: 1.0,   unit: '%',      price: 40 },
   { id: 'SMEAR',   testCode: 'SMEAR',   testNameEn: 'Blood Smear Examination',        testNameAr: 'فحص لطاخة دم',              category: 'Hematology',     categoryAr: 'أمراض الدم',      minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 50 },
+
   // ── Biochemistry ──────────────────────────────────────────────────────────
-  { id: 'BIO-01',  testCode: 'BIO-01',  testNameEn: 'Liver Panel (ALT, AST, ALP)',    testNameAr: 'فحص الكبد (ALT, AST, ALP)',  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 120 },
-  { id: 'BUN',     testCode: 'BUN',     testNameEn: 'BUN (Urea)',                     testNameAr: 'يوريا الدم',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 7,     maxNormal: 27,    minNormalOld: 10,    maxNormalOld: 30,    unit: 'mg/dL',  price: 45 },
-  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 0.5,   maxNormal: 2.2,   minNormalOld: 0.8,   maxNormalOld: 1.8,   unit: 'mg/dL',  price: 45 },
-  { id: 'GLU',     testCode: 'GLU',     testNameEn: 'Glucose',                        testNameAr: 'جلوكوز',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 60,    maxNormal: 120,   minNormalOld: 70,    maxNormalOld: 110,   unit: 'mg/dL',  price: 30 },
-  { id: 'TP',      testCode: 'TP',      testNameEn: 'Total Protein',                  testNameAr: 'بروتين كلي',                 category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 5.4,   maxNormal: 8.8,   minNormalOld: 6.0,   maxNormalOld: 8.0,   unit: 'g/dL',   price: 35 },
   { id: 'ALB',     testCode: 'ALB',     testNameEn: 'Albumin',                        testNameAr: 'ألبومين',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 2.3,   maxNormal: 4.0,   minNormalOld: 2.7,   maxNormalOld: 3.8,   unit: 'g/dL',   price: 35 },
+  { id: 'ALT',     testCode: 'ALT',     testNameEn: 'ALT/GPT',                        testNameAr: 'ALT/GPT',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 10.0,  maxNormal: 100.0, minNormalOld: 12.0,  maxNormalOld: 90.0,  unit: 'U/L',    price: 40 },
+  { id: 'AST',     testCode: 'AST',     testNameEn: 'AST/GOT',                        testNameAr: 'AST/GOT',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 10.0,  maxNormal: 80.0,  minNormalOld: 12.0,  maxNormalOld: 75.0,  unit: 'U/L',    price: 40 },
+  { id: 'ALP',     testCode: 'ALP',     testNameEn: 'ALP',                            testNameAr: 'ALP',                        category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 20.0,  maxNormal: 150.0, minNormalOld: 25.0,  maxNormalOld: 140.0, unit: 'U/L',    price: 40 },
   { id: 'CA',      testCode: 'CA',      testNameEn: 'Calcium',                        testNameAr: 'كالسيوم',                    category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 8.0,   maxNormal: 12.0,  minNormalOld: 8.5,   maxNormalOld: 11.5,  unit: 'mg/dL',  price: 35 },
-  { id: 'PHOS',    testCode: 'PHOS',    testNameEn: 'Phosphorus',                     testNameAr: 'فوسفور',                     category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 2.5,   maxNormal: 6.8,   minNormalOld: 2.0,   maxNormalOld: 5.5,   unit: 'mg/dL',  price: 35 },
-  { id: 'ELEC',    testCode: 'ELEC',    testNameEn: 'Electrolytes (Na, K, Cl)',       testNameAr: 'إلكتروليتات (صوديوم، بوتاسيوم، كلوريد)', category: 'Biochemistry', categoryAr: 'الكيمياء الحيوية', minNormal: null, maxNormal: null, minNormalOld: null, maxNormalOld: null, unit: null, price: 60 },
-  // ── Microbiology ──────────────────────────────────────────────────────────
-  { id: 'MIC-01',  testCode: 'MIC-01',  testNameEn: 'Bacterial Culture & Sensitivity',testNameAr: 'زراعة بكتيرية وحساسية',     category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 150 },
-  { id: 'MIC-02',  testCode: 'MIC-02',  testNameEn: 'Fungal Culture',                 testNameAr: 'زراعة فطرية',                category: 'Microbiology',   categoryAr: 'الأحياء الدقيقة', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 130 },
-  // ── Parasitology ──────────────────────────────────────────────────────────
-  { id: 'PAR-01',  testCode: 'PAR-01',  testNameEn: 'Fecal Examination',              testNameAr: 'فحص براز',                   category: 'Parasitology',   categoryAr: 'طفيليات',         minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 50 },
-  // ── Endocrinology ─────────────────────────────────────────────────────────
-  { id: 'HORM-01', testCode: 'HORM-01', testNameEn: 'Thyroid Panel (T4, T3)',         testNameAr: 'فحص الغدة الدرقية (T4, T3)', category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,   maxNormal: 4.0,   minNormalOld: 0.8,   maxNormalOld: 3.5,   unit: 'µg/dL',  price: 90 },
-  { id: 'PROG',    testCode: 'PROG',    testNameEn: 'Progesterone',                   testNameAr: 'بروجسترون',                  category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: 'ng/mL',  price: 100 },
-  { id: 'CORT',    testCode: 'CORT',    testNameEn: 'Cortisol',                       testNameAr: 'كورتيزول',                   category: 'Endocrinology',  categoryAr: 'الغدد الصماء',    minNormal: 1.0,   maxNormal: 5.0,   minNormalOld: 1.0,   maxNormalOld: 4.0,   unit: 'µg/dL',  price: 95 },
-  // ── Urinalysis ────────────────────────────────────────────────────────────
-  { id: 'UA',      testCode: 'UA',      testNameEn: 'Complete Urinalysis',            testNameAr: 'تحليل بول شامل',             category: 'Urinalysis',     categoryAr: 'تحليل البول',     minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 60 },
-  // ── Special ───────────────────────────────────────────────────────────────
-  { id: 'PREP-EQ', testCode: 'PREP-EQ', testNameEn: 'Pre-Purchase Exam (Equine)',     testNameAr: 'فحص ما قبل الشراء (خيول)',   category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: null,  maxNormal: null,  minNormalOld: null,  maxNormalOld: null,  unit: null,     price: 200 },
+  { id: 'CK',      testCode: 'CK',      testNameEn: 'CK',                             testNameAr: 'CK',                         category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 50.0,  maxNormal: 350.0, minNormalOld: 60.0,  maxNormalOld: 320.0, unit: 'U/L',    price: 40 },
+  { id: 'CREAT',   testCode: 'CREAT',   testNameEn: 'Creatinine',                     testNameAr: 'كرياتينين',                  category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 0.5,   maxNormal: 1.8,   minNormalOld: 0.6,   maxNormalOld: 1.7,   unit: 'mg/dL',  price: 40 },
+  { id: 'IRON',    testCode: 'IRON',    testNameEn: 'Iron',                           testNameAr: 'حديد',                       category: 'Biochemistry',   categoryAr: 'الكيمياء الحيوية', minNormal: 70.0,  maxNormal: 200.0, minNormalOld: 80.0,  maxNormalOld: 190.0, unit: 'µg/dL',  price: 50 },
 ]
 
-// Quick-pick bundles — common test combinations ordered together
-const BUNDLES: { id: string; nameAr: string; testCodes: string[] }[] = [
-  { id: 'routine',  nameAr: 'فحص دوري شامل',      testCodes: ['CBC', 'GLU', 'BIO-01', 'BUN', 'CREAT', 'UA'] },
-  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testCodes: ['CBC', 'HGB', 'WBC', 'PCV', 'RBC', 'PLT'] },
-  { id: 'kidney',   nameAr: 'باقة وظائف الكلى',    testCodes: ['BUN', 'CREAT', 'TP', 'ALB', 'ELEC'] },
-  { id: 'prepurchase', nameAr: 'فحص ما قبل الشراء', testCodes: ['PREP-EQ', 'CBC', 'BIO-01'] },
-  { id: 'general',  nameAr: 'فحص عام شامل',        testCodes: ['CBC', 'BIO-01', 'BUN', 'CREAT', 'GLU', 'TP', 'ALB', 'UA'] },
+const FALLBACK_BUNDLES: { id: string; nameAr: string; testCodes: string[]; animalIds?: string; customPrice?: number | null }[] = [
+  { id: 'hema',     nameAr: 'باقة أمراض الدم',     testCodes: ['CBC', 'HGB', 'WBC', 'PCV', 'PLT'] },
+  { id: 'biochem',  nameAr: 'باقة الكيمياء الحيوية', testCodes: ['ALB', 'ALT', 'AST', 'ALP', 'CA', 'CK', 'CREAT', 'IRON'] },
 ]
 
 interface ResultRow {
@@ -164,6 +158,8 @@ export function QuickReportWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [catalog, setCatalog] = useState<TestCatalogItem[]>(TEST_CATALOG)
   const [catalogSource, setCatalogSource] = useState<'loading' | 'db' | 'fallback'>('loading')
+  const [activeAnimals, setActiveAnimals] = useState<AnimalItem[]>([])
+  const [activeBundles, setActiveBundles] = useState<typeof FALLBACK_BUNDLES>(FALLBACK_BUNDLES)
   const [reportId] = useState(generateReportId)
   const [reportTimestamp] = useState(() => new Date())
 
@@ -183,7 +179,36 @@ export function QuickReportWizard() {
         }
       })
       .catch(() => setCatalogSource('fallback'))
+      
+    fetch('/api/animals?limit=100')
+      .then(r => r.json())
+      .then(json => {
+        const list = Array.isArray(json) ? json : json.data
+        if (Array.isArray(list) && list.length > 0) {
+          setActiveAnimals(list)
+        }
+      })
+      .catch(console.error)
+
+    fetch('/api/bundles')
+      .then(r => r.json())
+      .then(json => {
+        if (Array.isArray(json) && json.length > 0) {
+          setActiveBundles(json.map(b => ({
+            id: b.id,
+            nameAr: b.nameAr,
+            testCodes: b.testCodes ? b.testCodes.split(',') : [],
+            animalIds: b.animalIds,
+            customPrice: b.customPrice ?? null
+          })))
+        }
+      })
+      .catch(console.error)
   }, [])
+
+  const currentAnimals = activeAnimals.length > 0
+    ? activeAnimals.map(a => ({ value: a.id, labelAr: a.nameAr, icon: a.icon }))
+    : ANIMALS
 
   const [data, setData] = useState<WizardData>({
     customerName: '',
@@ -309,7 +334,7 @@ export function QuickReportWizard() {
     })
   }
 
-  const applyBundle = (bundle: typeof BUNDLES[0]) => {
+  const applyBundle = (bundle: typeof FALLBACK_BUNDLES[0]) => {
     const bundleTests = bundle.testCodes
       .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
       .filter((t): t is TestCatalogItem => !!t)
@@ -330,7 +355,7 @@ export function QuickReportWizard() {
     }
   }
 
-  const isBundleActive = (bundle: typeof BUNDLES[0]) => {
+  const isBundleActive = (bundle: typeof FALLBACK_BUNDLES[0]) => {
     const bundleTests = bundle.testCodes
       .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
       .filter((t): t is TestCatalogItem => !!t)
@@ -343,24 +368,44 @@ export function QuickReportWizard() {
       results: prev.results.map(r => (r.catalogId === catalogId ? { ...r, value } : r)),
     }))
 
-  // Filter catalog based on selected species (animalType)
-  // Shows tests that are general (no speciesId/species specified) or tests matching the selected species name (En or Ar).
+  // Filter catalog based on selected animal (animalType maps to Animal ID)
+  // Shows tests that have empty animalIds OR animalIds includes the selected animal.
   const filteredCatalog = catalog.filter(t => {
     if (!data.animalType) return true // Show all if none picked yet
-    if (!t.species && !t.speciesId) return true // General tests are shown for everyone
     
-    const speciesEn = t.species?.nameEn?.toLowerCase() || ''
-    const speciesAr = t.species?.nameAr || ''
-    const selected = data.animalType.toLowerCase()
+    // Support legacy filtering using species strings if no animalIds exist
+    if (!t.animalIds && (t.species || t.speciesId)) {
+      const speciesEn = t.species?.nameEn?.toLowerCase() || ''
+      const speciesAr = t.species?.nameAr || ''
+      const selectedId = data.animalType
+      // Look up selected animal name for legacy mapping
+      const selectedAnimal = currentAnimals.find(a => a.value === selectedId)
+      const selectedAr = selectedAnimal?.labelAr || ''
+      const selectedLegacyName = Object.values(ANIMALS).find(a => a.labelAr === selectedAr)?.value.toLowerCase() || ''
+      
+      if (selectedLegacyName === 'camel' && (speciesEn.includes('camel') || speciesAr.includes('جمل'))) return true
+      if (selectedLegacyName === 'sheep' && (speciesEn.includes('sheep') || speciesAr.includes('خروف'))) return true
+      if (selectedLegacyName === 'goat' && (speciesEn.includes('goat') || speciesAr.includes('ماعز') || speciesEn.includes('dog'))) return true
+      if (selectedLegacyName === 'cat' && (speciesEn.includes('cat') || speciesAr.includes('قطة'))) return true
+      if (selectedLegacyName === 'horse' && (speciesEn.includes('horse') || speciesAr.includes('حصان'))) return true
+      return false
+    }
+
+    // New logic: check animalIds
+    if (!t.animalIds) return true // applies to all if null/empty
+    const ids = t.animalIds.split(',').filter(Boolean)
+    if (ids.length === 0) return true
     
-    // Exact match or fallback mapping (e.g. Dog -> Goat remapping)
-    if (selected === 'camel' && (speciesEn.includes('camel') || speciesAr.includes('جمل'))) return true
-    if (selected === 'sheep' && (speciesEn.includes('sheep') || speciesAr.includes('خروف'))) return true
-    if (selected === 'goat' && (speciesEn.includes('goat') || speciesAr.includes('ماعز') || speciesEn.includes('dog'))) return true
-    if (selected === 'cat' && (speciesEn.includes('cat') || speciesAr.includes('قطة'))) return true
-    if (selected === 'horse' && (speciesEn.includes('horse') || speciesAr.includes('حصان'))) return true
-    
-    return false
+    return ids.includes(data.animalType)
+  })
+
+  // Filter bundles based on selected animal
+  const filteredBundles = activeBundles.filter(b => {
+    if (!data.animalType) return true
+    if (!b.animalIds) return true
+    const ids = b.animalIds.split(',').filter(Boolean)
+    if (ids.length === 0) return true
+    return ids.includes(data.animalType)
   })
 
   // Group catalog by category for easier picking
@@ -370,7 +415,41 @@ export function QuickReportWizard() {
     return acc
   }, {})
 
-  const totalPrice = data.results.reduce((sum, r) => sum + r.price, 0)
+  const totalPrice = (() => {
+    let price = 0;
+    const coveredTestIds = new Set<string>();
+
+    // 1. Find active bundles with customPrice
+    const activeWithCustom = filteredBundles.filter(b => b.customPrice !== null && b.customPrice !== undefined && isBundleActive(b));
+
+    // 2. Sort by number of tests descending (prioritize largest bundles first to resolve overlaps optimally)
+    activeWithCustom.sort((a, b) => b.testCodes.length - a.testCodes.length);
+
+    // 3. Apply custom prices without overlapping
+    activeWithCustom.forEach(b => {
+      const bundleTestIds = b.testCodes
+        .map(code => catalog.find(t => t.testCode === code || t.testCode.startsWith(code + '-')))
+        .filter((t): t is TestCatalogItem => !!t)
+        .map(t => t.id);
+      
+      // If none of these tests are already covered by a larger bundle, apply this bundle's custom price
+      const hasOverlap = bundleTestIds.some(id => coveredTestIds.has(id));
+      
+      if (!hasOverlap) {
+        price += b.customPrice!;
+        bundleTestIds.forEach(id => coveredTestIds.add(id));
+      }
+    });
+
+    // 4. Add individual prices for remaining tests not covered by any applied bundle
+    data.results.forEach(r => {
+      if (!coveredTestIds.has(r.catalogId)) {
+        price += r.price;
+      }
+    });
+
+    return price;
+  })();
 
   const canGoStep2 = data.customerName && data.phone && data.animalType && data.selectedTestIds.length > 0
   const canGoStep3 = data.results.some(r => r.value.trim() !== '')
@@ -516,7 +595,7 @@ export function QuickReportWizard() {
                         </span>
                         <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <History className="w-3 h-3" />
-                          {ANIMALS.find(a => a.value === c.animalType)?.icon} {c.animalName || ANIMALS.find(a => a.value === c.animalType)?.labelAr}
+                          {currentAnimals.find(a => a.value === c.animalType)?.icon} {c.animalName || currentAnimals.find(a => a.value === c.animalType)?.labelAr}
                         </span>
                       </button>
                     ))}
@@ -538,7 +617,7 @@ export function QuickReportWizard() {
                   <Select value={data.animalType} onValueChange={v => update('animalType', v)}>
                     <SelectTrigger className="flex-1"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
                     <SelectContent>
-                      {ANIMALS.map(a => (
+                      {currentAnimals.map(a => (
                         <SelectItem key={a.value} value={a.value}>
                           {a.icon} {a.labelAr}
                         </SelectItem>
@@ -568,7 +647,7 @@ export function QuickReportWizard() {
             <div>
               <label className="text-sm font-medium mb-2 block">باقات سريعة</label>
               <div className="flex flex-wrap gap-2">
-                {BUNDLES.map(b => {
+                {filteredBundles.map(b => {
                   const active = isBundleActive(b)
                   return (
                     <Button
@@ -653,7 +732,7 @@ export function QuickReportWizard() {
           <CardHeader><CardTitle className="text-base">إدخال نتائج التحاليل</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 flex justify-between">
-              <span>{data.customerName} · {ANIMALS.find(a => a.value === data.animalType)?.labelAr} · {data.results.length} فحص</span>
+              <span>{data.customerName} · {currentAnimals.find(a => a.value === data.animalType)?.labelAr} · {data.results.length} فحص</span>
               <span className="font-medium">{totalPrice} ر.س</span>
             </div>
 

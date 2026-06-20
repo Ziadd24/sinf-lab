@@ -6,10 +6,10 @@ import { AppSidebar, type NavItem } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard'
 import { QuickReportWizard } from '@/components/quick-report-wizard'
 import { PastReportsView } from '@/components/past-reports-view'
-import { TestCatalogView } from '@/components/test-catalog-view'
+import { SettingsView } from '@/components/settings-view'
 import { BackupView } from '@/components/backup-view'
 import { InvoicesView } from '@/components/invoices-view'
-import { Bell, Search, User } from 'lucide-react'
+import { Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -17,7 +17,7 @@ const navTitles: Record<NavItem, string> = {
   dashboard: 'لوحة التحكم',
   'quick-report': 'تقرير سريع',
   'past-reports': 'سجل التقارير',
-  tests: 'دليل الفحوصات',
+  settings: 'الإعدادات',
   invoices: 'الفواتير',
   backup: 'النسخ الاحتياطي',
 }
@@ -44,7 +44,7 @@ export function AppLayout() {
       case 'dashboard': return <DashboardView />
       case 'quick-report': return <QuickReportWizard />
       case 'past-reports': return <PastReportsView />
-      case 'tests': return <TestCatalogView />
+      case 'settings': return <SettingsView />
       case 'invoices': return <InvoicesView />
       case 'backup': return <BackupView />
     }
@@ -64,10 +64,6 @@ export function AppLayout() {
         <header className="h-16 border-b bg-card flex items-center gap-4 px-6 shrink-0 print:hidden">
           <h1 className="text-lg font-semibold">{navTitles[activeNav]}</h1>
           <div className="flex-1" />
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />
-          </Button>
           <div className="flex items-center gap-2 mr-2">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="w-4 h-4 text-primary" />

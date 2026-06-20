@@ -10,10 +10,10 @@ export function cn(...inputs: ClassValue[]) {
  * comma-separated string. These helpers convert at the API boundary so the
  * rest of the app can keep working with string[] as before.
  */
-export function serializeTestIds(testIds: string[]): string {
-  return testIds.join(",")
+export function serializeIds(ids: string[]): string {
+  return ids.join(",")
 }
 
-export function deserializeTestIds(testIds: string): string[] {
-  return testIds ? testIds.split(",").filter(Boolean) : []
+export function deserializeIds(ids: string | null | undefined): string[] {
+  return ids ? ids.split(",").filter(Boolean) : []
 }

@@ -10,13 +10,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Receipt,
+  Settings,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
-export type NavItem = 'dashboard' | 'quick-report' | 'past-reports' | 'tests' | 'invoices' | 'backup'
+export type NavItem = 'dashboard' | 'quick-report' | 'past-reports' | 'settings' | 'invoices' | 'backup'
 
 interface AppSidebarProps {
   activeNav: NavItem
@@ -29,8 +30,8 @@ const navItems: { id: NavItem; icon: React.ElementType; labelAr: string }[] = [
   { id: 'dashboard', icon: LayoutDashboard, labelAr: 'لوحة التحكم' },
   { id: 'quick-report', icon: ClipboardList, labelAr: 'تقرير سريع' },
   { id: 'past-reports', icon: History, labelAr: 'سجل التقارير' },
-  { id: 'tests', icon: BookOpen, labelAr: 'دليل الفحوصات' },
   { id: 'invoices', icon: Receipt, labelAr: 'الفواتير' },
+  { id: 'settings', icon: Settings, labelAr: 'الإعدادات' },
   { id: 'backup', icon: ShieldCheck, labelAr: 'النسخ الاحتياطي' },
 ]
 

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-guard'
 import { sampleCreateSchema, sampleUpdateSchema, paginationSchema } from '@/lib/validators'
 import { logAudit } from '@/lib/audit'
-import { serializeTestIds, deserializeTestIds } from '@/lib/utils'
+import { serializeIds, deserializeIds } from '@/lib/utils'
 import type { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       db.labSample.count({ where }),
     ])
 
-    const data = samples.map((s) => ({ ...s, testIds: deserializeTestIds(s.testIds) }))
+    const data = samples.map((s) => ({ ...s, testIds: deserializeIds(s.testIds) }))
     return NextResponse.json({ data, total, page, limit })
   } catch (error) {
     console.error('Error fetching samples:', error)
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       data: {
         ...rest,
         barcode,
-        testIds: serializeTestIds(testIds), // comma-separated string (SQLite has no array type)
+        testIds: serializeIds(testIds), // comma-separated string (SQLite has no array type)
       },
     })
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       newValue: validated,
     })
 
-    return NextResponse.json({ ...sample, testIds: deserializeTestIds(sample.testIds) }, { status: 201 })
+    return NextResponse.json({ ...sample, testIds: deserializeIds(sample.testIds) }, { status: 201 })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
@@ -121,7 +121,7 @@ export async function PUT(request: Request) {
 
     const updateData: Prisma.LabSampleUncheckedUpdateInput = {
       ...restData,
-      ...(testIds ? { testIds: serializeTestIds(testIds) } : {}),
+      ...(testIds ? { testIds: serializeIds(testIds) } : {}),
       ...(completedAt ? { completedAt: new Date(completedAt) } : {}),
     }
 
@@ -136,7 +136,7 @@ export async function PUT(request: Request) {
       newValue: data,
     })
 
-    return NextResponse.json({ ...sample, testIds: deserializeTestIds(sample.testIds) })
+    return NextResponse.json({ ...sample, testIds: deserializeIds(sample.testIds) })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })

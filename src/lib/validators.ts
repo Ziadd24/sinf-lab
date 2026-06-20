@@ -1,5 +1,25 @@
 import { z } from "zod";
 
+// ─── Bundle ───────────────────────────────────────────────────────────────
+export const bundleCreateSchema = z.object({
+  nameEn: z.string().optional().default(""),
+  nameAr: z.string().min(1, "Arabic name is required"),
+  testCodes: z.string().min(1, "At least one test code is required"),
+  animalIds: z.string().optional(),
+  customPrice: z.coerce.number().min(0).nullable().optional(),
+  active: z.boolean().default(true),
+});
+
+export const bundleUpdateSchema = z.object({
+  id: z.string().min(1),
+  nameEn: z.string().optional(),
+  nameAr: z.string().min(1).optional(),
+  testCodes: z.string().min(1).optional(),
+  animalIds: z.string().optional(),
+  customPrice: z.coerce.number().min(0).nullable().optional(),
+  active: z.boolean().optional(),
+});
+
 // ─── Species ──────────────────────────────────────────────────────────────
 export const speciesCreateSchema = z.object({
   nameEn: z.string().min(1, "English name is required"),
@@ -12,6 +32,22 @@ export const speciesUpdateSchema = z.object({
   nameEn: z.string().min(1).optional(),
   nameAr: z.string().min(1).optional(),
   icon: z.string().optional(),
+});
+
+// ─── Animal ───────────────────────────────────────────────────────────────
+export const animalCreateSchema = z.object({
+  nameEn: z.string().min(1, "English name is required"),
+  nameAr: z.string().min(1, "Arabic name is required"),
+  icon: z.string().nullable().optional(),
+  active: z.boolean().default(true),
+});
+
+export const animalUpdateSchema = z.object({
+  id: z.string().min(1),
+  nameEn: z.string().min(1).optional(),
+  nameAr: z.string().min(1).optional(),
+  icon: z.string().nullable().optional(),
+  active: z.boolean().optional(),
 });
 
 // ─── Clinic ───────────────────────────────────────────────────────────────
@@ -97,6 +133,7 @@ export const testCreateSchema = z.object({
   price: z.number().min(0, "Price must be non-negative"),
   turnaround: z.string().optional(),
   active: z.boolean().default(true),
+  animalIds: z.string().nullable().optional(),
 });
 
 export const testUpdateSchema = z.object({
@@ -115,6 +152,7 @@ export const testUpdateSchema = z.object({
   price: z.number().min(0).optional(),
   turnaround: z.string().optional(),
   active: z.boolean().optional(),
+  animalIds: z.string().nullable().optional(),
 });
 
 // ─── Invoice ──────────────────────────────────────────────────────────────

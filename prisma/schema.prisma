@@ -65,6 +65,30 @@ model Pet {
   updatedAt  DateTime @updatedAt
 }
 
+model Animal {
+  id        String   @id @default(cuid()) @map("_id")
+  nameEn    String
+  nameAr    String
+  icon      String?
+  active    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bundle {
+  id          String   @id @default(cuid()) @map("_id")
+  nameEn      String
+  nameAr      String
+  testCodes   String   // Comma-separated list of test codes
+  animalIds   String?  // Optional comma-separated animal IDs
+  customPrice Float?   // Optional custom price for the whole bundle
+  active      Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model TestCatalog {
   id         String    @id @default(cuid()) @map("_id")
   testCode   String    @unique
@@ -82,6 +106,7 @@ model TestCatalog {
   price      Float
   turnaround String?   // e.g., "2-4 hours"
   active     Boolean   @default(true)
+  animalIds  String?   // comma-separated animal IDs
   results    SampleResult[]
   validationRule ValidationRule?
 
